@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Voice → SOAP Note</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0a0f1a;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: #2a3550;
+    --text: #e8ecf4;
+    --text-dim: #7a8ba8;
+    --accent: #3b82f6;
+    --accent-glow: rgba(59, 130, 246, 0.3);
+    --red: #ef4444;
+    --red-glow: rgba(239, 68, 68, 0.35);
+    --green: #22c55e;
+    --green-glow: rgba(34, 197, 94, 0.3);
+    --yellow: #eab308;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .app {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px 16px 100px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    padding: 24px 0 16px;
+  }
+  .header h1 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #60a5fa, #3b82f6, #818cf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .header .sub {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    margin-top: 4px;
+    font-weight: 300;
+  }
+
+  /* API Key */
+  .api-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .api-section label {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 500;
+  }
+  .api-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .api-row input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .api-row input:focus { border-color: var(--accent); }
+  .api-row button {
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .api-row button:hover { filter: brightness(1.15); }
+  .api-status {
+    font-size: 0.72rem;
+    margin-top: 6px;
+    color: var(--green);
+    display: none;
+  }
+  .api-status.show { display: block; }
+
+  /* Record Button */
+  .record-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 0;
+  }
+  .rec-btn {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    border: 3px solid var(--border);
+    background: var(--surface);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .rec-btn:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 30px var(--accent-glow);
+  }
+  .rec-btn.recording {
+    border-color: var(--red);
+    box-shadow: 0 0 40px var(--red-glow);
+    animation: pulse-rec 1.5s ease-in-out infinite;
+  }
+  .rec-btn.processing {
+    border-color: var(--yellow);
+    box-shadow: 0 0 30px rgba(234, 179, 8, 0.25);
+    pointer-events: none;
+  }
+  @keyframes pulse-rec {
+    0%, 100% { box-shadow: 0 0 30px var(--red-glow); }
+    50% { box-shadow: 0 0 60px var(--red-glow); }
+  }
+  .rec-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--accent);
+    transition: all 0.3s;
+  }
+  .rec-btn.recording .rec-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: var(--red);
+  }
+  .rec-btn.processing .rec-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--yellow);
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    100% { transform: rotate(360deg); }
+  }
+  .rec-label {
+    margin-top: 14px;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    font-weight: 400;
+  }
+  .rec-timer {
+    margin-top: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.3rem;
+    color: var(--red);
+    display: none;
+  }
+  .rec-timer.show { display: block; }
+
+  /* Pipeline Status */
+  .pipeline {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .pipeline.show { display: block; }
+  .pipe-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    font-size: 0.82rem;
+    color: var(--text-dim);
+  }
+  .pipe-step.active { color: var(--text); }
+  .pipe-step.done { color: var(--green); }
+  .pipe-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+  .pipe-step.active .pipe-dot {
+    background: var(--yellow);
+    animation: blink 0.8s ease-in-out infinite;
+  }
+  .pipe-step.done .pipe-dot { background: var(--green); }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Transcript */
+  .section-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    overflow: hidden;
+    display: none;
+  }
+  .section-block.show { display: block; }
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+  .section-actions { display: flex; gap: 6px; }
+  .sm-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 12px;
+    color: var(--text-dim);
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .sm-btn:hover { color: var(--text); border-color: var(--accent); }
+  .sm-btn.copied { color: var(--green); border-color: var(--green); }
+  .section-body {
+    padding: 16px;
+    font-size: 0.88rem;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  .section-body::-webkit-scrollbar { width: 4px; }
+  .section-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* SOAP Output */
+  .soap-output .section-body {
+    font-family: 'Noto Sans KR', sans-serif;
+    max-height: 500px;
+  }
+  .soap-output .section-body h3 {
+    color: var(--accent);
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin: 16px 0 6px;
+    letter-spacing: 0.5px;
+  }
+  .soap-output .section-body h3:first-child { margin-top: 0; }
+
+  /* Settings toggle */
+  .settings-toggle {
+    text-align: center;
+    margin-bottom: 12px;
+  }
+  .settings-toggle button {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 16px;
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .settings-toggle button:hover { color: var(--text); border-color: var(--accent); }
+
+  .settings-panel {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .settings-panel.show { display: block; }
+  .setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+  }
+  .setting-row label {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+  }
+  .setting-row select, .setting-row input[type="text"] {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    color: var(--text);
+    font-size: 0.8rem;
+    outline: none;
+  }
+
+  /* Prompt editor */
+  .prompt-editor {
+    margin-top: 10px;
+  }
+  .prompt-editor textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    line-height: 1.6;
+    resize: vertical;
+    min-height: 120px;
+    outline: none;
+  }
+  .prompt-editor textarea:focus { border-color: var(--accent); }
+  .prompt-label {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+
+  /* Error */
+  .error-msg {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: #fca5a5;
+    font-size: 0.82rem;
+    margin-bottom: 16px;
+    display: none;
+  }
+  .error-msg.show { display: block; }
+
+  /* Responsive */
+  @media (max-width: 500px) {
+    .app { padding: 12px 10px 80px; }
+    .rec-btn { width: 120px; height: 120px; }
+    .rec-icon { width: 40px; height: 40px; }
+  }
+
+  /* Upload zone */
+  .upload-zone {
+    background: var(--surface);
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 16px;
+  }
+  .upload-zone:hover, .upload-zone:active {
+    border-color: var(--accent);
+    background: var(--surface2);
+  }
+  .upload-zone.processing {
+    pointer-events: none;
+    opacity: 0.6;
+  }
+  .upload-icon { font-size: 1.6rem; margin-bottom: 6px; }
+  .upload-text { font-size: 0.88rem; color: var(--text); font-weight: 500; }
+  .upload-sub { font-size: 0.72rem; color: var(--text-dim); margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <h1>Voice → SOAP Note</h1>
+    <div class="sub">녹음 → Whisper 음성인식 → GPT SOAP 변환</div>
+  </div>
+
+  <!-- API Key -->
+  <div class="api-section">
+    <label>OpenAI API Key</label>
+    <div class="api-row">
+      <input type="password" id="apiKey" placeholder="sk-..." autocomplete="off">
+      <button onclick="saveKey()">저장</button>
+    </div>
+    <div class="api-status" id="apiStatus">✓ API Key 저장됨</div>
+  </div>
+
+  <!-- Settings -->
+  <div class="settings-toggle">
+    <button onclick="toggleSettings()">⚙ 설정</button>
+  </div>
+  <div class="settings-panel" id="settingsPanel">
+    <div class="setting-row">
+      <label>GPT 모델</label>
+      <select id="gptModel">
+        <option value="gpt-4o">GPT-4o</option>
+        <option value="gpt-4o-mini" selected>GPT-4o-mini</option>
+        <option value="gpt-4.1-mini">GPT-4.1-mini</option>
+        <option value="gpt-4.1">GPT-4.1</option>
+      </select>
+    </div>
+    <div class="setting-row">
+      <label>Whisper 언어</label>
+      <select id="whisperLang">
+        <option value="ko" selected>한국어</option>
+        <option value="en">English</option>
+        <option value="">자동감지</option>
+      </select>
+    </div>
+    <div class="prompt-editor">
+      <div class="prompt-label">SOAP 변환 프롬프트 (수정 가능)</div>
+      <textarea id="soapPrompt">당신은 척추 신경외과 전문의의 진료 기록을 SOAP 노트로 변환하는 의료 문서 전문가입니다.
+
+아래 진료 대화 녹취록을 SOAP 형식으로 정리해주세요.
+
+## 규칙
+- 의학 용어는 정확히 사용
+- 환자가 말한 주관적 내용(S)과 의사의 객관적 소견(O)을 명확히 구분
+- Assessment(A)는 감별진단 포함
+- Plan(P)은 구체적 치료 계획 기술
+- 한국어로 작성, 필요시 의학 영문 약어 병기
+- 불필요한 대화(인사, 잡담 등)는 제외
+
+## 출력 형식
+### S (Subjective)
+[내용]
+
+### O (Objective)
+[내용]
+
+### A (Assessment)
+[내용]
+
+### P (Plan)
+[내용]</textarea>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div class="error-msg" id="errorMsg"></div>
+
+  <!-- Record Button -->
+  <div class="record-zone">
+    <div class="rec-btn" id="recBtn" onclick="toggleRecord()">
+      <div class="rec-icon" id="recIcon"></div>
+    </div>
+    <div class="rec-label" id="recLabel">탭하여 녹음 시작</div>
+    <div class="rec-timer" id="recTimer">00:00</div>
+  </div>
+
+  <!-- Divider -->
+  <div style="display:flex;align-items:center;gap:12px;margin:0 0 16px;">
+    <div style="flex:1;height:1px;background:var(--border)"></div>
+    <span style="font-size:0.72rem;color:var(--text-dim)">또는 녹음 파일 업로드</span>
+    <div style="flex:1;height:1px;background:var(--border)"></div>
+  </div>
+
+  <!-- File Upload -->
+  <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+    <input type="file" id="fileInput" accept="audio/*,video/*,.m4a,.mp3,.wav,.webm,.mp4,.ogg,.flac" style="display:none" onchange="handleFileUpload(event)">
+    <div class="upload-icon">📁</div>
+    <div class="upload-text">녹음 파일 선택</div>
+    <div class="upload-sub">m4a, mp3, wav, webm, mp4 등</div>
+  </div>
+
+  <!-- Pipeline -->
+  <div class="pipeline" id="pipeline">
+    <div class="pipe-step" id="step1"><div class="pipe-dot"></div>음성 인식 (Whisper)</div>
+    <div class="pipe-step" id="step2"><div class="pipe-dot"></div>SOAP 노트 변환 (GPT)</div>
+  </div>
+
+  <!-- Transcript -->
+  <div class="section-block" id="transcriptBlock">
+    <div class="section-header">
+      <span class="section-title">📝 녹취록</span>
+      <div class="section-actions">
+        <button class="sm-btn" onclick="copyText('transcriptBody', this)">복사</button>
+      </div>
+    </div>
+    <div class="section-body" id="transcriptBody"></div>
+  </div>
+
+  <!-- SOAP -->
+  <div class="section-block soap-output" id="soapBlock">
+    <div class="section-header">
+      <span class="section-title">📋 SOAP Note</span>
+      <div class="section-actions">
+        <button class="sm-btn" onclick="copyText('soapBody', this)">복사</button>
+        <button class="sm-btn" onclick="copyPlainSOAP(this)">텍스트만 복사</button>
+      </div>
+    </div>
+    <div class="section-body" id="soapBody"></div>
+  </div>
+</div>
+
+<script>
+  // State
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let isRecording = false;
+  let timerInterval = null;
+  let seconds = 0;
+
+  // Elements
+  const recBtn = document.getElementById('recBtn');
+  const recIcon = document.getElementById('recIcon');
+  const recLabel = document.getElementById('recLabel');
+  const recTimer = document.getElementById('recTimer');
+  const pipeline = document.getElementById('pipeline');
+  const errorMsg = document.getElementById('errorMsg');
+
+  // Load saved key
+  const savedKey = localStorage.getItem('openai_api_key') || '';
+  if (savedKey) {
+    document.getElementById('apiKey').value = savedKey;
+    document.getElementById('apiStatus').classList.add('show');
+  }
+
+  // Load saved model
+  const savedModel = localStorage.getItem('gpt_model');
+  if (savedModel) document.getElementById('gptModel').value = savedModel;
+
+  // Load saved prompt
+  const savedPrompt = localStorage.getItem('soap_prompt');
+  if (savedPrompt) document.getElementById('soapPrompt').value = savedPrompt;
+
+  function saveKey() {
+    const key = document.getElementById('apiKey').value.trim();
+    if (!key) return;
+    localStorage.setItem('openai_api_key', key);
+    document.getElementById('apiStatus').classList.add('show');
+  }
+
+  function toggleSettings() {
+    const panel = document.getElementById('settingsPanel');
+    panel.classList.toggle('show');
+  }
+
+  function showError(msg) {
+    errorMsg.textContent = msg;
+    errorMsg.classList.add('show');
+    setTimeout(() => errorMsg.classList.remove('show'), 8000);
+  }
+
+  function updateTimer() {
+    seconds++;
+    const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+    const s = String(seconds % 60).padStart(2, '0');
+    recTimer.textContent = `${m}:${s}`;
+  }
+
+  async function toggleRecord() {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  }
+
+  async function startRecording() {
+    const key = document.getElementById('apiKey').value.trim() || localStorage.getItem('openai_api_key');
+    if (!key) {
+      showError('OpenAI API Key를 입력해주세요');
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: { 
+          sampleRate: 16000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true
+        } 
+      });
+
+      // Try webm first, fall back to mp4
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+        ? 'audio/webm;codecs=opus' 
+        : MediaRecorder.isTypeSupported('audio/mp4')
+          ? 'audio/mp4'
+          : '';
+
+      mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+      audioChunks = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        stream.getTracks().forEach(t => t.stop());
+        const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+        const blob = new Blob(audioChunks, { type: mimeType || 'audio/webm' });
+        processAudio(blob, ext);
+      };
+
+      mediaRecorder.start(1000);
+      isRecording = true;
+      seconds = 0;
+      recBtn.classList.add('recording');
+      recLabel.textContent = '탭하여 녹음 중지';
+      recTimer.classList.add('show');
+      timerInterval = setInterval(updateTimer, 1000);
+
+      // Reset previous results
+      errorMsg.classList.remove('show');
+    } catch (err) {
+      showError('마이크 접근 실패 — file:// 프로토콜에서는 마이크가 차단됩니다. 아래 파일 업로드를 이용하세요.');
+    }
+  }
+
+  function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+    }
+    isRecording = false;
+    clearInterval(timerInterval);
+    recBtn.classList.remove('recording');
+    recBtn.classList.add('processing');
+    recLabel.textContent = '처리 중...';
+    recTimer.classList.remove('show');
+  }
+
+  async function processAudio(blob, ext) {
+    const key = document.getElementById('apiKey').value.trim() || localStorage.getItem('openai_api_key');
+    const lang = document.getElementById('whisperLang').value;
+    const model = document.getElementById('gptModel').value;
+    const prompt = document.getElementById('soapPrompt').value;
+
+    // Save settings
+    localStorage.setItem('gpt_model', model);
+    localStorage.setItem('soap_prompt', prompt);
+
+    // Show pipeline
+    pipeline.classList.add('show');
+    setStep('step1', 'active');
+    setStep('step2', '');
+
+    try {
+      // Step 1: Whisper STT
+      const formData = new FormData();
+      const filename = blob.name || `recording.${ext}`;
+      formData.append('file', blob, filename);
+      formData.append('model', 'whisper-1');
+      if (lang) formData.append('language', lang);
+      formData.append('response_format', 'text');
+
+      const sttRes = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${key}` },
+        body: formData
+      });
+
+      if (!sttRes.ok) {
+        const err = await sttRes.json().catch(() => ({}));
+        throw new Error(`Whisper 오류: ${err.error?.message || sttRes.statusText}`);
+      }
+
+      const transcript = await sttRes.text();
+      setStep('step1', 'done');
+
+      // Show transcript
+      document.getElementById('transcriptBody').textContent = transcript;
+      document.getElementById('transcriptBlock').classList.add('show');
+
+      // Step 2: GPT SOAP conversion
+      setStep('step2', 'active');
+
+      const gptRes = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${key}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [
+            { role: 'system', content: prompt },
+            { role: 'user', content: `다음은 진료 녹취록입니다:\n\n${transcript}` }
+          ],
+          temperature: 0.3,
+          max_tokens: 2000
+        })
+      });
+
+      if (!gptRes.ok) {
+        const err = await gptRes.json().catch(() => ({}));
+        throw new Error(`GPT 오류: ${err.error?.message || gptRes.statusText}`);
+      }
+
+      const gptData = await gptRes.json();
+      const soapText = gptData.choices[0].message.content;
+      setStep('step2', 'done');
+
+      // Render SOAP
+      const soapBody = document.getElementById('soapBody');
+      soapBody.innerHTML = renderSOAP(soapText);
+      soapBody.setAttribute('data-raw', soapText);
+      document.getElementById('soapBlock').classList.add('show');
+
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      recBtn.classList.remove('processing');
+      recLabel.textContent = '탭하여 녹음 시작';
+    }
+  }
+
+  function setStep(id, state) {
+    const el = document.getElementById(id);
+    el.className = 'pipe-step' + (state ? ' ' + state : '');
+  }
+
+  function renderSOAP(text) {
+    return text
+      .replace(/### (S|O|A|P) \((.+?)\)/g, '<h3>$1 ($2)</h3>')
+      .replace(/### (.+)/g, '<h3>$1</h3>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n/g, '<br>');
+  }
+
+  function copyText(id, btn) {
+    const el = document.getElementById(id);
+    const raw = el.getAttribute('data-raw') || el.textContent;
+    navigator.clipboard.writeText(raw).then(() => {
+      btn.textContent = '✓ 복사됨';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+
+  function copyPlainSOAP(btn) {
+    const el = document.getElementById('soapBody');
+    const raw = el.getAttribute('data-raw') || el.textContent;
+    // Strip markdown
+    const plain = raw.replace(/###\s*/g, '').replace(/\*\*/g, '');
+    navigator.clipboard.writeText(plain).then(() => {
+      btn.textContent = '✓ 복사됨';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = '텍스트만 복사'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+
+  async function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const key = document.getElementById('apiKey').value.trim() || localStorage.getItem('openai_api_key');
+    if (!key) {
+      showError('OpenAI API Key를 입력해주세요');
+      event.target.value = '';
+      return;
+    }
+
+    // Check file size (Whisper limit: 25MB)
+    if (file.size > 25 * 1024 * 1024) {
+      showError('파일 크기가 25MB를 초과합니다. 더 짧게 나누어 주세요.');
+      event.target.value = '';
+      return;
+    }
+
+    const uploadZone = document.getElementById('uploadZone');
+    uploadZone.classList.add('processing');
+    document.querySelector('.upload-text').textContent = '처리 중: ' + file.name;
+
+    errorMsg.classList.remove('show');
+    processAudio(file, file.name.split('.').pop()).finally(() => {
+      uploadZone.classList.remove('processing');
+      document.querySelector('.upload-text').textContent = '녹음 파일 선택';
+      event.target.value = '';
+    });
+  }
+</script>
+
+</body>
+</html>
