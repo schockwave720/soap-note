@@ -2,813 +2,1725 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Voice → SOAP Note</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOAP Multi-AI | 구리센트럴병원 신경외과</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
+:root{
+  --bg:#0a0f1e;--surface:#111827;--surface2:#1a2335;--border:#1e3a5f;
+  --accent:#00b4d8;--green:#06d6a0;--text:#e2e8f0;--dim:#64748b;
+  --s:#60a5fa;--o:#34d399;--a:#f59e0b;--p:#f472b6;
+  --cerebras:#00d4aa;--gemini:#4285f4;--groq:#f55036;--sambanova:#ff4500;
+  --deepseek:#0066ff;--xai:#1da1f2;--openai:#10a37f;--anthropic:#d97706;
+  --openrouter:#ff6b6b;--zai:#8b5cf6;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,180,216,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,180,216,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+.wrap{max-width:1400px;margin:0 auto;padding:20px;position:relative;z-index:1}
 
-  :root {
-    --bg: #0a0f1a;
-    --surface: #111827;
-    --surface2: #1a2235;
-    --border: #2a3550;
-    --text: #e8ecf4;
-    --text-dim: #7a8ba8;
-    --accent: #3b82f6;
-    --accent-glow: rgba(59, 130, 246, 0.3);
-    --red: #ef4444;
-    --red-glow: rgba(239, 68, 68, 0.35);
-    --green: #22c55e;
-    --green-glow: rgba(34, 197, 94, 0.3);
-    --yellow: #eab308;
-  }
+/* 헤더 */
+.hdr{text-align:center;margin-bottom:24px}
+.badge{display:inline-flex;align-items:center;gap:8px;background:rgba(0,180,216,.1);border:1px solid var(--border);border-radius:20px;padding:5px 14px;font-size:11px;color:var(--accent);margin-bottom:12px}
+.dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+h1{font-size:24px;font-weight:700;letter-spacing:-.5px}
+h1 span{color:var(--accent)}
+.sub{font-size:12px;color:var(--dim);margin-top:4px}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+/* API 키 섹션 */
+.api-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px}
+details.card>summary{list-style:none}
+details.card>summary::-webkit-details-marker{display:none}
+details.card>summary::after{content:'▶';font-size:10px;color:var(--dim);transition:transform .2s}
+details.card[open]>summary::after{transform:rotate(90deg)}
 
-  body {
-    font-family: 'Noto Sans KR', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+/* 프로필 */
+.profile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:6px}
+.pf-row{display:flex;align-items:center;gap:6px}
+.pf-row label{font-size:10px;color:var(--dim);min-width:80px;white-space:nowrap}
+.pf-row .api-inp{flex:1}
+.api-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px}
+.api-card label{font-size:11px;color:var(--dim);display:block;margin-bottom:4px}
+.api-row{display:flex;gap:6px;align-items:center}
+.api-inp{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:6px 10px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none}
+.api-inp:focus{border-color:var(--accent)}
+.api-st{font-size:10px;padding:3px 8px;border-radius:3px;white-space:nowrap}
+.ok{background:rgba(6,214,160,.1);color:var(--green)}
+.no{background:rgba(245,158,11,.1);color:#f59e0b}
 
-  .app {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px 16px 100px;
-  }
+/* 레이아웃 */
+.layout{display:grid;grid-template-columns:320px 1fr;gap:16px}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
 
-  /* Header */
-  .header {
-    text-align: center;
-    padding: 24px 0 16px;
-  }
-  .header h1 {
-    font-size: 1.4rem;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-    background: linear-gradient(135deg, #60a5fa, #3b82f6, #818cf8);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-  .header .sub {
-    font-size: 0.78rem;
-    color: var(--text-dim);
-    margin-top: 4px;
-    font-weight: 300;
-  }
+/* 왼쪽 패널 */
+.left-panel{display:flex;flex-direction:column;gap:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.card-hdr{padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:12px;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:6px}
+.card-body{padding:12px}
 
-  /* API Key */
-  .api-section {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 16px;
-  }
-  .api-section label {
-    font-size: 0.75rem;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-weight: 500;
-  }
-  .api-row {
-    display: flex;
-    gap: 8px;
-    margin-top: 8px;
-  }
-  .api-row input {
-    flex: 1;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 14px;
-    color: var(--text);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.82rem;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  .api-row input:focus { border-color: var(--accent); }
-  .api-row button {
-    background: var(--accent);
-    border: none;
-    border-radius: 8px;
-    padding: 10px 18px;
-    color: #fff;
-    font-size: 0.82rem;
-    font-weight: 500;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.2s;
-  }
-  .api-row button:hover { filter: brightness(1.15); }
-  .api-status {
-    font-size: 0.72rem;
-    margin-top: 6px;
-    color: var(--green);
-    display: none;
-  }
-  .api-status.show { display: block; }
+/* 프로바이더 */
+.provider{margin-bottom:8px;border-radius:6px;overflow:hidden;border:1px solid var(--border)}
+.prov-hdr{padding:5px 10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-size:11px;font-weight:700}
+.prov-hdr .cnt{background:rgba(255,255,255,.2);padding:1px 5px;border-radius:3px;font-size:10px}
+.prov-body{padding:6px;background:rgba(0,0,0,.2);display:flex;flex-wrap:wrap;gap:3px}
+.prov-cerebras .prov-hdr{background:linear-gradient(135deg,#00d4aa,#00b894)}
+.prov-gemini .prov-hdr{background:linear-gradient(135deg,#4285f4,#34a853)}
+.prov-groq .prov-hdr{background:linear-gradient(135deg,#f55036,#ff6b6b)}
+.prov-sambanova .prov-hdr{background:linear-gradient(135deg,#ff4500,#ff6347)}
+.prov-deepseek .prov-hdr{background:linear-gradient(135deg,#0066ff,#00d4ff)}
+.prov-xai .prov-hdr{background:linear-gradient(135deg,#1da1f2,#0d8ecf)}
+.prov-openai .prov-hdr{background:linear-gradient(135deg,#10a37f,#1a7f64)}
+.prov-anthropic .prov-hdr{background:linear-gradient(135deg,#d97706,#b45309)}
+.prov-openrouter .prov-hdr{background:linear-gradient(135deg,#ff6b6b,#ee5a5a)}
+.prov-zai .prov-hdr{background:linear-gradient(135deg,#8b5cf6,#6d28d9)}
 
-  /* Record Button */
-  .record-zone {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 32px 0;
-  }
-  .rec-btn {
-    width: 140px;
-    height: 140px;
-    border-radius: 50%;
-    border: 3px solid var(--border);
-    background: var(--surface);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    position: relative;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .rec-btn:hover {
-    border-color: var(--accent);
-    box-shadow: 0 0 30px var(--accent-glow);
-  }
-  .rec-btn.recording {
-    border-color: var(--red);
-    box-shadow: 0 0 40px var(--red-glow);
-    animation: pulse-rec 1.5s ease-in-out infinite;
-  }
-  .rec-btn.processing {
-    border-color: var(--yellow);
-    box-shadow: 0 0 30px rgba(234, 179, 8, 0.25);
-    pointer-events: none;
-  }
-  @keyframes pulse-rec {
-    0%, 100% { box-shadow: 0 0 30px var(--red-glow); }
-    50% { box-shadow: 0 0 60px var(--red-glow); }
-  }
-  .rec-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: var(--accent);
-    transition: all 0.3s;
-  }
-  .rec-btn.recording .rec-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    background: var(--red);
-  }
-  .rec-btn.processing .rec-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: var(--yellow);
-    animation: spin 1s linear infinite;
-  }
-  @keyframes spin {
-    100% { transform: rotate(360deg); }
-  }
-  .rec-label {
-    margin-top: 14px;
-    font-size: 0.85rem;
-    color: var(--text-dim);
-    font-weight: 400;
-  }
-  .rec-timer {
-    margin-top: 6px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 1.3rem;
-    color: var(--red);
-    display: none;
-  }
-  .rec-timer.show { display: block; }
+.model-cb{display:inline-flex;align-items:center;gap:3px;padding:3px 6px;background:var(--surface2);border-radius:4px;cursor:pointer;font-size:11px;border:1.5px solid transparent;transition:all .15s;white-space:nowrap}
+.model-cb:hover{background:#475569}
+.model-cb.sel{border-color:var(--green);background:rgba(6,214,160,.15)}
+.model-cb input{width:10px;height:10px;accent-color:var(--green)}
+.tag{font-size:9px;padding:1px 3px;border-radius:2px;margin-left:2px}
+.tag-best{background:#7c3aed;color:#fff}
+.tag-hot{background:#ef4444;color:#fff}
+.tag-fast{background:#f59e0b;color:#000}
+.tag-new{background:#a855f7;color:#fff}
 
-  /* Pipeline Status */
-  .pipeline {
-    display: none;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 16px;
-  }
-  .pipeline.show { display: block; }
-  .pipe-step {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 0;
-    font-size: 0.82rem;
-    color: var(--text-dim);
-  }
-  .pipe-step.active { color: var(--text); }
-  .pipe-step.done { color: var(--green); }
-  .pipe-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--border);
-    flex-shrink: 0;
-  }
-  .pipe-step.active .pipe-dot {
-    background: var(--yellow);
-    animation: blink 0.8s ease-in-out infinite;
-  }
-  .pipe-step.done .pipe-dot { background: var(--green); }
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-  }
+/* 퀵셀 */
+.qsel{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}
+.qbtn{padding:3px 8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:4px;color:var(--text);font-size:10px;cursor:pointer}
+.qbtn:hover{background:rgba(255,255,255,.15)}
 
-  /* Transcript */
-  .section-block {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    margin-bottom: 16px;
-    overflow: hidden;
-    display: none;
-  }
-  .section-block.show { display: block; }
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border);
-  }
-  .section-title {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--text-dim);
-    font-weight: 500;
-  }
-  .section-actions { display: flex; gap: 6px; }
-  .sm-btn {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 5px 12px;
-    color: var(--text-dim);
-    font-size: 0.72rem;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .sm-btn:hover { color: var(--text); border-color: var(--accent); }
-  .sm-btn.copied { color: var(--green); border-color: var(--green); }
-  .section-body {
-    padding: 16px;
-    font-size: 0.88rem;
-    line-height: 1.7;
-    white-space: pre-wrap;
-    max-height: 300px;
-    overflow-y: auto;
-  }
-  .section-body::-webkit-scrollbar { width: 4px; }
-  .section-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+/* 선택카운트 */
+.sel-bar{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:var(--surface2);border-radius:5px;margin-bottom:8px;font-size:11px}
+.sel-cnt{font-size:16px;font-weight:700;color:var(--green)}
 
-  /* SOAP Output */
-  .soap-output .section-body {
-    font-family: 'Noto Sans KR', sans-serif;
-    max-height: 500px;
-  }
-  .soap-output .section-body h3 {
-    color: var(--accent);
-    font-size: 0.85rem;
-    font-weight: 700;
-    margin: 16px 0 6px;
-    letter-spacing: 0.5px;
-  }
-  .soap-output .section-body h3:first-child { margin-top: 0; }
+/* 상세도 선택 */
+.detail-opt{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;background:var(--surface2);border:1.5px solid var(--border);border-radius:6px;cursor:pointer;font-size:11px;transition:all .15s}
+.detail-opt:hover{border-color:var(--accent)}
+.detail-opt.sel{border-color:var(--green);background:rgba(6,214,160,.15);color:var(--green)}
+.detail-opt input{display:none}
+.detail-opt:has(input:checked){border-color:var(--green);background:rgba(6,214,160,.15);color:var(--green)}
 
-  /* Settings toggle */
-  .settings-toggle {
-    text-align: center;
-    margin-bottom: 12px;
-  }
-  .settings-toggle button {
-    background: none;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 6px 16px;
-    color: var(--text-dim);
-    font-size: 0.75rem;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .settings-toggle button:hover { color: var(--text); border-color: var(--accent); }
+/* 텍스트 입력 */
+textarea{width:100%;background:transparent;border:none;outline:none;color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:13px;line-height:1.8;resize:vertical;min-height:140px}
+textarea::placeholder{color:var(--dim)}
 
-  .settings-panel {
-    display: none;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 16px;
-  }
-  .settings-panel.show { display: block; }
-  .setting-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 0;
-  }
-  .setting-row label {
-    font-size: 0.8rem;
-    color: var(--text-dim);
-  }
-  .setting-row select, .setting-row input[type="text"] {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 6px 10px;
-    color: var(--text);
-    font-size: 0.8rem;
-    outline: none;
-  }
+/* 버튼 */
+.btn{width:100%;padding:11px;border:none;border-radius:7px;font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-go{background:linear-gradient(135deg,#0077b6,var(--accent));color:#fff}
+.btn-go:hover{opacity:.9;transform:translateY(-1px)}
+.btn-go:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-sm{padding:5px 12px;width:auto;font-size:11px;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer}
+.btn-sm:hover{border-color:var(--accent);color:var(--accent)}
+.btn-copy{background:rgba(6,214,160,.1);border:1px solid rgba(6,214,160,.3);color:var(--green);padding:5px 12px;width:auto;font-size:11px;border-radius:5px;cursor:pointer}
+.btn-copy:hover{background:rgba(6,214,160,.2)}
 
-  /* Prompt editor */
-  .prompt-editor {
-    margin-top: 10px;
-  }
-  .prompt-editor textarea {
-    width: 100%;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px;
-    color: var(--text);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.75rem;
-    line-height: 1.6;
-    resize: vertical;
-    min-height: 120px;
-    outline: none;
-  }
-  .prompt-editor textarea:focus { border-color: var(--accent); }
-  .prompt-label {
-    font-size: 0.72rem;
-    color: var(--text-dim);
-    margin-bottom: 6px;
-  }
+/* 결과 패널 */
+.results-grid{display:flex;flex-direction:column;gap:12px}
+.result-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;animation:fadeIn .4s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.result-hdr{padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.model-badge{display:flex;align-items:center;gap:8px}
+.model-name{font-size:13px;font-weight:700;color:var(--text)}
+.model-provider{font-size:10px;padding:2px 8px;border-radius:3px;font-weight:600}
+.result-body{padding:14px}
+.soap-block{margin-bottom:12px;padding:10px 12px;border-radius:7px;border-left:3px solid}
+.soap-block.s{border-color:var(--s);background:rgba(96,165,250,.05)}
+.soap-block.o{border-color:var(--o);background:rgba(52,211,153,.05)}
+.soap-block.a{border-color:var(--a);background:rgba(245,158,11,.08);border-left-width:4px}
+.soap-block.p{border-color:var(--p);background:rgba(244,114,182,.08);border-left-width:4px}
+.soap-lbl{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:2px;margin-bottom:5px}
+.soap-block.s .soap-lbl{color:var(--s)}
+.soap-block.o .soap-lbl{color:var(--o)}
+.soap-block.a .soap-lbl{color:var(--a)}
+.soap-block.p .soap-lbl{color:var(--p)}
+.soap-txt{font-size:12.5px;line-height:1.8;white-space:pre-wrap;color:var(--text)}
 
-  /* Error */
-  .error-msg {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    border-radius: 8px;
-    padding: 12px 16px;
-    color: #fca5a5;
-    font-size: 0.82rem;
-    margin-bottom: 16px;
-    display: none;
-  }
-  .error-msg.show { display: block; }
+/* 로딩 */
+.loading-box{padding:40px;text-align:center;color:var(--accent)}
+.spinner{width:24px;height:24px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-model{font-size:12px;color:var(--dim)}
 
-  /* Responsive */
-  @media (max-width: 500px) {
-    .app { padding: 12px 10px 80px; }
-    .rec-btn { width: 120px; height: 120px; }
-    .rec-icon { width: 40px; height: 40px; }
-  }
+/* 에러 */
+.err-box{padding:16px;background:rgba(239,68,68,.08);border-radius:6px;color:#f87171;font-size:12px}
 
-  /* Upload zone */
-  .upload-zone {
-    background: var(--surface);
-    border: 2px dashed var(--border);
-    border-radius: 12px;
-    padding: 24px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    margin-bottom: 16px;
-  }
-  .upload-zone:hover, .upload-zone:active {
-    border-color: var(--accent);
-    background: var(--surface2);
-  }
-  .upload-zone.processing {
-    pointer-events: none;
-    opacity: 0.6;
-  }
-  .upload-icon { font-size: 1.6rem; margin-bottom: 6px; }
-  .upload-text { font-size: 0.88rem; color: var(--text); font-weight: 500; }
-  .upload-sub { font-size: 0.72rem; color: var(--text-dim); margin-top: 4px; }
+/* 예시버튼 */
+.ex-btn{font-size:10px;padding:3px 8px;border-radius:4px;background:rgba(0,180,216,.1);border:1px solid rgba(0,180,216,.2);color:var(--accent);cursor:pointer}
+.ex-btn:hover{background:rgba(0,180,216,.2)}
+
+/* 토스트 */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#0a0f1e;padding:10px 18px;border-radius:7px;font-size:12px;font-weight:700;opacity:0;transform:translateY(8px);transition:all .3s;z-index:999;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* progress */
+.progress-bar{height:3px;background:var(--border);border-radius:2px;margin-top:8px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent2,#0077b6),var(--accent));border-radius:2px;transition:width .3s}
+
+.empty-state{padding:60px 20px;text-align:center;color:var(--dim);font-size:13px;line-height:2}
+
+/* 이미지 결과 */
+.img-result{flex:1;min-width:200px;max-width:320px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.img-result img{width:100%;display:block;cursor:pointer}
+.img-result img:hover{opacity:.9}
+.img-result .img-label{padding:6px 8px;font-size:10px;color:var(--dim);display:flex;justify-content:space-between;align-items:center}
+.img-result .img-label span{font-weight:700;color:var(--text)}
+.img-loading{display:flex;align-items:center;justify-content:center;min-height:200px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);flex:1;min-width:200px;max-width:320px}
+.img-err{padding:12px;background:rgba(239,68,68,.08);border-radius:6px;color:#f87171;font-size:11px;flex:1;min-width:200px;max-width:320px}
+
+/* 입력 모드 탭 */
+.input-tabs{display:flex;gap:0;margin-bottom:8px;border-radius:7px;overflow:hidden;border:1px solid var(--border)}
+.input-tab{flex:1;padding:8px 4px;text-align:center;font-size:11px;font-weight:600;cursor:pointer;background:var(--surface2);color:var(--dim);border:none;transition:all .2s}
+.input-tab.active{background:var(--accent);color:#fff}
+.input-tab:not(.active):hover{background:rgba(0,180,216,.1)}
+.input-pane{display:none}.input-pane.active{display:block}
+
+/* 녹음 버튼 */
+.rec-zone{display:flex;flex-direction:column;align-items:center;padding:20px 0}
+.rec-btn{width:100px;height:100px;border-radius:50%;border:3px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .3s;-webkit-tap-highlight-color:transparent}
+.rec-btn:hover{border-color:var(--accent);box-shadow:0 0 20px rgba(0,180,216,.2)}
+.rec-btn.recording{border-color:#ef4444;box-shadow:0 0 30px rgba(239,68,68,.3);animation:recPulse 1.5s ease-in-out infinite}
+.rec-btn.processing{border-color:#eab308;box-shadow:0 0 20px rgba(234,179,8,.2);pointer-events:none}
+@keyframes recPulse{0%,100%{box-shadow:0 0 20px rgba(239,68,68,.3)}50%{box-shadow:0 0 45px rgba(239,68,68,.4)}}
+.rec-dot{width:36px;height:36px;border-radius:50%;background:var(--accent);transition:all .3s}
+.rec-btn.recording .rec-dot{width:26px;height:26px;border-radius:6px;background:#ef4444}
+.rec-btn.processing .rec-dot{width:26px;height:26px;border-radius:50%;background:#eab308;animation:spin .8s linear infinite}
+.rec-lbl{margin-top:10px;font-size:11px;color:var(--dim)}
+.rec-time{margin-top:4px;font-family:'JetBrains Mono',monospace;font-size:1.1rem;color:#ef4444;display:none}
+.rec-time.show{display:block}
+
+/* 파일 업로드 */
+.upload-box{border:2px dashed var(--border);border-radius:8px;padding:16px;text-align:center;cursor:pointer;transition:all .2s;margin-top:8px}
+.upload-box:hover{border-color:var(--accent);background:rgba(0,180,216,.03)}
+.upload-box.processing{pointer-events:none;opacity:.6}
+.upload-box .upload-icon{font-size:1.2rem}.upload-box .upload-text{font-size:12px;font-weight:500;margin-top:4px}
+.upload-box .upload-sub{font-size:10px;color:var(--dim);margin-top:2px}
+
+/* STT 파이프라인 */
+.stt-pipeline{background:var(--surface2);border-radius:6px;padding:8px 10px;margin-top:8px;display:none}
+.stt-pipeline.show{display:block}
+.stt-step{display:flex;align-items:center;gap:6px;padding:4px 0;font-size:11px;color:var(--dim)}
+.stt-step.active{color:var(--text)}.stt-step.done{color:var(--green)}
+.stt-dot{width:6px;height:6px;border-radius:50%;background:var(--border);flex-shrink:0}
+.stt-step.active .stt-dot{background:#eab308;animation:blink .8s infinite}
+.stt-step.done .stt-dot{background:var(--green)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* PC 연동 섹션 */
+.sync-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:16px}
+.sync-body{padding:16px;text-align:center}
+.sync-desc{font-size:11px;color:var(--dim);line-height:1.6;margin-bottom:12px}
+.sync-code{font-family:'JetBrains Mono',monospace;font-size:2rem;font-weight:700;letter-spacing:6px;color:var(--accent);padding:8px 0}
+.sync-status{font-size:11px;margin-top:6px}
+.sync-status.ok{color:var(--green)}.sync-status.wait{color:#eab308}.sync-status.err{color:#ef4444}
+.sync-join-input{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:1.2rem;text-align:center;letter-spacing:4px;width:140px;outline:none}
+.sync-join-input:focus{border-color:var(--accent)}
+.sync-mode-btns{display:flex;gap:6px;justify-content:center;margin-top:12px}
+.sync-mode-btns button{padding:7px 14px;font-size:11px}
+.sync-received{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-top:12px;text-align:left;white-space:pre-wrap;font-size:12px;line-height:1.7;max-height:300px;overflow-y:auto;display:none}
+.sync-received.show{display:block}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
 </head>
 <body>
+<div class="wrap">
 
-<div class="app">
-  <div class="header">
-    <h1>Voice → SOAP Note</h1>
-    <div class="sub">녹음 → Whisper 음성인식 → GPT SOAP 변환</div>
-  </div>
-
-  <!-- API Key -->
-  <div class="api-section">
-    <label>OpenAI API Key</label>
-    <div class="api-row">
-      <input type="password" id="apiKey" placeholder="sk-..." autocomplete="off">
-      <button onclick="saveKey()">저장</button>
-    </div>
-    <div class="api-status" id="apiStatus">✓ API Key 저장됨</div>
-  </div>
-
-  <!-- Settings -->
-  <div class="settings-toggle">
-    <button onclick="toggleSettings()">⚙ 설정</button>
-  </div>
-  <div class="settings-panel" id="settingsPanel">
-    <div class="setting-row">
-      <label>GPT 모델</label>
-      <select id="gptModel">
-        <option value="gpt-4o">GPT-4o</option>
-        <option value="gpt-4o-mini" selected>GPT-4o-mini</option>
-        <option value="gpt-4.1-mini">GPT-4.1-mini</option>
-        <option value="gpt-4.1">GPT-4.1</option>
-      </select>
-    </div>
-    <div class="setting-row">
-      <label>Whisper 언어</label>
-      <select id="whisperLang">
-        <option value="ko" selected>한국어</option>
-        <option value="en">English</option>
-        <option value="">자동감지</option>
-      </select>
-    </div>
-    <div class="prompt-editor">
-      <div class="prompt-label">SOAP 변환 프롬프트 (수정 가능)</div>
-      <textarea id="soapPrompt">당신은 척추 신경외과 전문의의 진료 기록을 SOAP 노트로 변환하는 의료 문서 전문가입니다.
-
-아래 진료 대화 녹취록을 SOAP 형식으로 정리해주세요.
-
-## 규칙
-- 의학 용어는 정확히 사용
-- 환자가 말한 주관적 내용(S)과 의사의 객관적 소견(O)을 명확히 구분
-- Assessment(A)는 감별진단 포함
-- Plan(P)은 구체적 치료 계획 기술
-- 한국어로 작성, 필요시 의학 영문 약어 병기
-- 불필요한 대화(인사, 잡담 등)는 제외
-
-## 출력 형식
-### S (Subjective)
-[내용]
-
-### O (Objective)
-[내용]
-
-### A (Assessment)
-[내용]
-
-### P (Plan)
-[내용]</textarea>
-    </div>
-  </div>
-
-  <!-- Error -->
-  <div class="error-msg" id="errorMsg"></div>
-
-  <!-- Record Button -->
-  <div class="record-zone">
-    <div class="rec-btn" id="recBtn" onclick="toggleRecord()">
-      <div class="rec-icon" id="recIcon"></div>
-    </div>
-    <div class="rec-label" id="recLabel">탭하여 녹음 시작</div>
-    <div class="rec-timer" id="recTimer">00:00</div>
-  </div>
-
-  <!-- Divider -->
-  <div style="display:flex;align-items:center;gap:12px;margin:0 0 16px;">
-    <div style="flex:1;height:1px;background:var(--border)"></div>
-    <span style="font-size:0.72rem;color:var(--text-dim)">또는 녹음 파일 업로드</span>
-    <div style="flex:1;height:1px;background:var(--border)"></div>
-  </div>
-
-  <!-- File Upload -->
-  <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
-    <input type="file" id="fileInput" accept="audio/*,video/*,.m4a,.mp3,.wav,.webm,.mp4,.ogg,.flac" style="display:none" onchange="handleFileUpload(event)">
-    <div class="upload-icon">📁</div>
-    <div class="upload-text">녹음 파일 선택</div>
-    <div class="upload-sub">m4a, mp3, wav, webm, mp4 등</div>
-  </div>
-
-  <!-- Pipeline -->
-  <div class="pipeline" id="pipeline">
-    <div class="pipe-step" id="step1"><div class="pipe-dot"></div>음성 인식 (Whisper)</div>
-    <div class="pipe-step" id="step2"><div class="pipe-dot"></div>SOAP 노트 변환 (GPT)</div>
-  </div>
-
-  <!-- Transcript -->
-  <div class="section-block" id="transcriptBlock">
-    <div class="section-header">
-      <span class="section-title">📝 녹취록</span>
-      <div class="section-actions">
-        <button class="sm-btn" onclick="copyText('transcriptBody', this)">복사</button>
-      </div>
-    </div>
-    <div class="section-body" id="transcriptBody"></div>
-  </div>
-
-  <!-- SOAP -->
-  <div class="section-block soap-output" id="soapBlock">
-    <div class="section-header">
-      <span class="section-title">📋 SOAP Note</span>
-      <div class="section-actions">
-        <button class="sm-btn" onclick="copyText('soapBody', this)">복사</button>
-        <button class="sm-btn" onclick="copyPlainSOAP(this)">텍스트만 복사</button>
-      </div>
-    </div>
-    <div class="section-body" id="soapBody"></div>
-  </div>
+<!-- 헤더 -->
+<div class="hdr">
+  <div class="badge"><div class="dot"></div>구리센트럴병원 신경외과</div>
+  <h1>⚡ <span>Multi-AI</span> SOAP 변환기</h1>
+  <p class="sub">여러 AI 모델을 동시에 선택 → 각각 SOAP 노트 생성 → 비교 & 복사</p>
 </div>
 
+<!-- API 키 (접이식) -->
+<details class="card" style="margin-bottom:16px">
+  <summary class="card-hdr" style="cursor:pointer;list-style:none">
+    <span class="card-title">🔑 API 키 설정</span>
+    <span style="font-size:10px;color:var(--green)">기본키 내장됨 · 클릭하여 편집</span>
+  </summary>
+  <div class="card-body">
+    <div class="api-wrap" id="apiWrap"></div>
+  </div>
+</details>
+
+<!-- 의사 프로필 (접이식) -->
+<details class="card" style="margin-bottom:16px" id="profileCard">
+  <summary class="card-hdr" style="cursor:pointer;list-style:none">
+    <span class="card-title">🩺 의사 프로필</span>
+    <span style="font-size:10px;color:var(--dim)" id="profileSummary">NS · Spine Surgeon (기본)</span>
+  </summary>
+  <div class="card-body">
+    <div class="profile-grid">
+      <div class="pf-row">
+        <label>전공/파트</label>
+        <input type="text" id="pf-specialty" class="api-inp" placeholder="Spine Surgery" value="Spine Surgery">
+      </div>
+      <div class="pf-row">
+        <label>직책/직위</label>
+        <input type="text" id="pf-title" class="api-inp" placeholder="과장, 교수, 원장 등">
+      </div>
+      <div class="pf-row">
+        <label>경력 (년)</label>
+        <input type="number" id="pf-years" class="api-inp" placeholder="20" value="20" min="0" max="60">
+      </div>
+      <div class="pf-row">
+        <label>주된 관심사</label>
+        <input type="text" id="pf-interest" class="api-inp" placeholder="TLIF, MIS, 척추변형 등">
+      </div>
+      <div class="pf-row">
+        <label>주된 환자군</label>
+        <input type="text" id="pf-patients" class="api-inp" placeholder="퇴행성 척추질환, 디스크, 협착증 등">
+      </div>
+      <div class="pf-row">
+        <label>약력/학력</label>
+        <input type="text" id="pf-background" class="api-inp" placeholder="OO대 의대, OO병원 전공의 등">
+      </div>
+      <div class="pf-row">
+        <label>개인적 관심사</label>
+        <input type="text" id="pf-personal" class="api-inp" placeholder="음악, 달리기, AI 등 (선택)">
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <button class="btn-sm" onclick="saveProfile()">💾 저장</button>
+      <button class="btn-sm" onclick="resetProfile()">🔄 초기화</button>
+    </div>
+  </div>
+</details>
+
+<!-- 메인 레이아웃 -->
+<div class="layout">
+
+  <!-- 왼쪽: 모델 선택 + 입력 -->
+  <div class="left-panel">
+
+    <!-- 모델 선택 -->
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-title">🤖 AI 모델 선택</span>
+        <span class="ex-btn" onclick="loadExample()">예시</span>
+      </div>
+      <div class="card-body">
+        <div class="sel-bar">
+          <span style="color:var(--dim);font-size:11px">선택된 모델</span>
+          <span class="sel-cnt" id="selCnt">0</span>
+        </div>
+        <div class="qsel">
+          <button class="qbtn" onclick="selAll()">전체선택</button>
+          <button class="qbtn" onclick="selNone()">전체해제</button>
+          <button class="qbtn" onclick="selBest()">🏆 Best만</button>
+          <button class="qbtn" onclick="selFast()">⚡ Fast만</button>
+        </div>
+        <div id="modelList"></div>
+      </div>
+    </div>
+
+    <!-- 진료 내용 입력 -->
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-title">✏️ 진료 내용 입력</span>
+      </div>
+      <div class="card-body">
+        <!-- 입력 모드 탭 -->
+        <div class="input-tabs">
+          <button class="input-tab active" onclick="switchInput('text')">📋 텍스트</button>
+          <button class="input-tab" onclick="switchInput('rec')">🎙 녹음</button>
+          <button class="input-tab" onclick="switchInput('file')">📁 파일</button>
+        </div>
+
+        <!-- 텍스트 입력 (클로바노트 붙여넣기) -->
+        <div class="input-pane active" id="pane-text">
+          <!-- 상세도 선택 -->
+          <div style="display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap">
+            <label class="detail-opt" data-val="brief">
+              <input type="radio" name="detailLevel" value="brief"> ⚡ 간략
+            </label>
+            <label class="detail-opt sel" data-val="normal">
+              <input type="radio" name="detailLevel" value="normal" checked> 📋 보통
+            </label>
+            <label class="detail-opt" data-val="detailed">
+              <input type="radio" name="detailLevel" value="detailed"> 📖 상세
+            </label>
+          </div>
+          <!-- 언어 모드 선택 -->
+          <div style="display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap">
+            <label class="detail-opt sel" data-val="en">
+              <input type="radio" name="langMode" value="en" checked> 🔤 영어 위주
+            </label>
+            <label class="detail-opt" data-val="bilingual">
+              <input type="radio" name="langMode" value="bilingual"> 🔄 한영 병기
+            </label>
+          </div>
+          <textarea id="inputTxt" placeholder="진료 내용을 자유롭게 입력하세요.
+클로바노트 녹취록, 메모, 구술 요약 모두 OK.
+
+Ctrl+Enter → 변환 시작"></textarea>
+          <button class="btn-sm" onclick="sendTextToPC()" style="margin-top:4px;color:var(--accent)">📡 입력된 텍스트를 PC로 전송</button>
+        </div>
+
+        <!-- 녹음 입력 -->
+        <div class="input-pane" id="pane-rec">
+          <div style="font-size:10px;color:var(--dim);text-align:center;margin-bottom:4px">HTTPS 환경 필요 (GitHub Pages)</div>
+          <div style="font-size:9px;color:var(--dim);text-align:center" id="recMimeInfo"></div>
+          <div class="rec-zone">
+            <div class="rec-btn" id="recBtn" onclick="toggleRecord()">
+              <div class="rec-dot" id="recDot"></div>
+            </div>
+            <div class="rec-lbl" id="recLabel">탭하여 녹음 시작</div>
+            <div class="rec-time" id="recTimer">00:00</div>
+          </div>
+          <div class="stt-pipeline" id="sttPipeline">
+            <div class="stt-step" id="sttStep1"><div class="stt-dot"></div>Whisper 음성인식 중...</div>
+            <div class="stt-step" id="sttStep2"><div class="stt-dot"></div>텍스트 변환 완료</div>
+          </div>
+        </div>
+
+        <!-- 파일 업로드 -->
+        <div class="input-pane" id="pane-file">
+          <div style="font-size:10px;color:var(--dim);margin-bottom:4px">녹음파일 → Whisper → 텍스트 자동변환</div>
+          <div class="upload-box" id="uploadBox" onclick="document.getElementById('audioFile').click()">
+            <input type="file" id="audioFile" accept="audio/*,video/*,.m4a,.mp3,.wav,.webm,.mp4,.ogg,.flac" style="display:none" onchange="handleFileUpload(event)">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text" id="uploadText">녹음 파일 선택</div>
+            <div class="upload-sub">m4a, mp3, wav, webm 등 (25MB 이하)</div>
+          </div>
+          <div class="stt-pipeline" id="sttPipeline2">
+            <div class="stt-step" id="sttStep1b"><div class="stt-dot"></div>Whisper 음성인식 중...</div>
+            <div class="stt-step" id="sttStep2b"><div class="stt-dot"></div>텍스트 변환 완료</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 변환 버튼 -->
+    <button class="btn btn-go" id="goBtn" onclick="runAll()">
+      ⚡ 선택된 AI 모두 SOAP 변환
+    </button>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+
+  </div>
+
+  <!-- 오른쪽: 결과 -->
+  <div>
+    <div id="results" class="results-grid">
+      <div class="empty-state">
+        ← AI 모델 선택 후<br>
+        <strong style="color:var(--accent)">SOAP 변환</strong> 버튼을 누르세요<br><br>
+        <span style="font-size:11px">선택한 모든 AI가 동시에 SOAP을 작성합니다</span>
+      </div>
+    </div>
+
+    <!-- 의료 이미지 생성 -->
+    <div class="card" id="imgGenCard" style="margin-top:16px;display:none">
+      <div class="card-hdr">
+        <span class="card-title">🖼️ 의료 이미지 생성</span>
+        <span style="font-size:10px;color:var(--dim)">SOAP 기반 자동 프롬프트</span>
+      </div>
+      <div class="card-body">
+        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">
+          <label class="detail-opt sel" data-val="nai">
+            <input type="checkbox" name="imgEngine" value="nai" checked> 🎨 NovelAI
+          </label>
+          <label class="detail-opt" data-val="gpt">
+            <input type="checkbox" name="imgEngine" value="gpt"> 🤖 GPT Image
+          </label>
+          <label class="detail-opt" data-val="nano-banana">
+            <input type="checkbox" name="imgEngine" value="nano-banana"> 🍌 NanoBanana
+          </label>
+          <label class="detail-opt" data-val="grok">
+            <input type="checkbox" name="imgEngine" value="grok"> ⚡ Grok
+          </label>
+          <label class="detail-opt" data-val="flux">
+            <input type="checkbox" name="imgEngine" value="flux"> 🌊 Flux Dev
+          </label>
+        </div>
+        <textarea id="imgPromptTxt" rows="3" placeholder="SOAP 변환 후 자동 생성됩니다. 직접 수정도 가능." style="font-size:11px;min-height:60px"></textarea>
+        <button class="btn btn-go" id="imgGoBtn" onclick="genMedImages()" style="margin-top:6px;background:linear-gradient(135deg,#7c3aed,#a855f7)">
+          🖼️ 선택 엔진으로 이미지 생성
+        </button>
+        <div id="imgResults" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:10px"></div>
+      </div>
+    </div>
+
+    <!-- PC 연동 -->
+    <div class="sync-card">
+      <div class="card-hdr">
+        <span class="card-title">💻 Galaxy Tab ↔ PC 실시간 전송</span>
+        <span style="font-size:10px;color:var(--dim)" id="syncBadge">미연결</span>
+      </div>
+      <div class="sync-body">
+        <div class="sync-desc">
+          <b>📱 태블릿:</b> 녹음 → Whisper 텍스트 변환 → PC로 전송<br>
+          <b>💻 PC:</b> 텍스트 자동 수신 → Multi-AI SOAP 변환 → EMR 복사<br>
+          <span style="font-size:10px">클로바노트 붙여넣기도 PC에서 직접 가능</span>
+        </div>
+        <div id="syncHost" style="display:none">
+          <div style="font-size:10px;color:var(--dim)">내 연결 코드 (PC에서 입력)</div>
+          <div class="sync-code" id="myCode">----</div>
+          <div class="sync-status wait" id="hostStatus">대기 중...</div>
+        </div>
+        <div id="syncJoin" style="display:none">
+          <div style="font-size:10px;color:var(--dim);margin-bottom:6px">태블릿의 연결 코드 입력</div>
+          <input class="sync-join-input" id="joinCode" maxlength="4" placeholder="코드" inputmode="numeric">
+          <button class="btn-sm" onclick="joinRoom()" style="margin-top:6px;padding:7px 18px">연결</button>
+          <div class="sync-status" id="joinStatus"></div>
+        </div>
+
+        <!-- PC 수신 영역: 녹취록 -->
+        <div id="recvTranscriptWrap" style="display:none;margin-top:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <span style="font-size:11px;font-weight:600;color:var(--accent)">📝 녹취록 (Whisper)</span>
+            <button class="btn-sm" onclick="copyEl('recvTranscript')">복사</button>
+          </div>
+          <div class="sync-received show" id="recvTranscript" style="display:block;max-height:200px"></div>
+        </div>
+
+        <!-- PC 수신 영역: SOAP -->
+        <div id="recvSoapWrap" style="display:none;margin-top:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <span style="font-size:11px;font-weight:600;color:var(--green)">📋 SOAP Note</span>
+            <button class="btn-copy" onclick="copyEl('recvSoap')">📋 EMR 복사</button>
+          </div>
+          <div class="sync-received show" id="recvSoap" style="display:block;max-height:400px"></div>
+        </div>
+
+        <div class="sync-mode-btns" id="syncBtns">
+          <button class="btn-sm" onclick="startHost()">📱 태블릿 (전송)</button>
+          <button class="btn-sm" onclick="startJoin()">💻 PC (수신)</button>
+        </div>
+        <div style="margin-top:10px;display:flex;align-items:center;justify-content:center;gap:6px">
+          <label style="font-size:10px;color:var(--dim);display:flex;align-items:center;gap:4px;cursor:pointer">
+            <input type="checkbox" id="autoSoapToggle" checked style="accent-color:var(--green)">
+            녹취록 수신 시 자동 SOAP 변환
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script>
-  // State
-  let mediaRecorder = null;
-  let audioChunks = [];
-  let isRecording = false;
-  let timerInterval = null;
-  let seconds = 0;
+// ===== 모델 & 프로바이더 정의 =====
+const PROVIDERS = {
+  cerebras: {
+    name:'⚡ Cerebras', color:'cerebras',
+    apiType:'openai', baseUrl:'https://api.cerebras.ai/v1',
+    keyId:'cerebras',
+    models:[
+      {id:'cb-gptoss',name:'GPT-OSS 120B',m:'gpt-oss-120b',tag:'best'},
+      {id:'cb-glm47',name:'GLM 4.7 (355B)',m:'zai-glm-4.7',tag:'hot'},
+      {id:'cb-qw3',name:'Qwen3 235B',m:'qwen-3-235b-a22b-instruct-2507',tag:'new'},
+      {id:'cb-llama31',name:'Llama 3.1 8B',m:'llama3.1-8b',tag:'fast'},
+    ]
+  },
+  gemini: {
+    name:'💎 Gemini', color:'gemini',
+    apiType:'gemini', baseUrl:'https://generativelanguage.googleapis.com/v1beta',
+    keyId:'gemini',
+    models:[
+      {id:'gem31p',name:'Gemini 3.1 Pro',m:'gemini-3.1-pro-preview',tag:'best'},
+      {id:'gem3f',name:'Gemini 3 Flash',m:'gemini-3-flash-preview',tag:'fast'},
+      {id:'gem25p',name:'Gemini 2.5 Pro',m:'gemini-2.5-pro',tag:'hot'},
+      {id:'gem25f',name:'Gemini 2.5 Flash',m:'gemini-2.5-flash',tag:'hot'},
+      {id:'gem25fl',name:'Gemini 2.5 Flash Lite',m:'gemini-2.5-flash-lite',tag:'fast'},
+    ]
+  },
+  groq: {
+    name:'🚀 Groq', color:'groq',
+    apiType:'openai', baseUrl:'https://api.groq.com/openai/v1',
+    keyId:'groq',
+    models:[
+      {id:'grq-gptoss120',name:'GPT-OSS 120B',m:'openai/gpt-oss-120b',tag:'best'},
+      {id:'grq-llama33',name:'Llama 3.3 70B',m:'llama-3.3-70b-versatile',tag:'hot'},
+      {id:'grq-llama4s',name:'Llama 4 Scout',m:'meta-llama/llama-4-scout-17b-16e-instruct',tag:'new'},
+      {id:'grq-gptoss20',name:'GPT-OSS 20B',m:'openai/gpt-oss-20b',tag:'fast'},
+      {id:'grq-qwen3',name:'Qwen 3 32B',m:'qwen/qwen3-32b'},
+    ]
+  },
+  sambanova: {
+    name:'🔥 SambaNova', color:'sambanova',
+    apiType:'openai', baseUrl:'https://api.sambanova.ai/v1',
+    keyId:'sambanova',
+    models:[
+      {id:'sn-ds3',name:'DeepSeek V3',m:'DeepSeek-V3-0324',tag:'hot'},
+      {id:'sn-llama4s',name:'Llama 4 Scout',m:'Llama-4-Scout-17B-16E-Instruct',tag:'new'},
+      {id:'sn-llama33',name:'Llama 3.3 70B',m:'Meta-Llama-3.3-70B-Instruct',tag:'fast'},
+      {id:'sn-qwq',name:'QwQ 32B',m:'QwQ-32B',tag:'hot'},
+      {id:'sn-qwen32',name:'Qwen 2.5 72B',m:'Qwen2.5-72B-Instruct'},
+    ]
+  },
+  deepseek: {
+    name:'💰 DeepSeek', color:'deepseek',
+    apiType:'openai', baseUrl:'https://api.deepseek.com/v1',
+    keyId:'deepseek',
+    models:[
+      {id:'ds-v3',name:'V3',m:'deepseek-chat',tag:'hot'},
+      {id:'ds-r1',name:'R1 Reasoner',m:'deepseek-reasoner',tag:'best'},
+    ]
+  },
+  xai: {
+    name:'🤖 xAI (Grok)', color:'xai',
+    apiType:'openai', baseUrl:'https://api.x.ai/v1',
+    keyId:'xai',
+    models:[
+      {id:'grk41r',name:'Grok 4.1 Fast (R)',m:'grok-4-1-fast-reasoning',tag:'best'},
+      {id:'grk41n',name:'Grok 4.1 Fast',m:'grok-4-1-fast-non-reasoning',tag:'hot'},
+      {id:'grk3m',name:'Grok 3 Mini',m:'grok-3-mini-latest',tag:'fast'},
+    ]
+  },
+  openai: {
+    name:'🤖 OpenAI', color:'openai',
+    apiType:'openai', baseUrl:'https://api.openai.com/v1',
+    keyId:'openai',
+    models:[
+      {id:'oai-gpt54',name:'GPT-5.4',m:'gpt-5.4',tag:'best'},
+      {id:'oai-gpt54m',name:'GPT-5.4 Mini',m:'gpt-5.4-mini',tag:'hot'},
+      {id:'oai-gpt54n',name:'GPT-5.4 Nano',m:'gpt-5.4-nano',tag:'fast'},
+      {id:'oai-gpt5m',name:'GPT-5 Mini',m:'gpt-5-mini'},
+    ]
+  },
+  anthropic: {
+    name:'🧠 Claude', color:'anthropic',
+    apiType:'anthropic', baseUrl:'https://api.anthropic.com/v1',
+    keyId:'anthropic',
+    models:[
+      {id:'ant-opus46',name:'Opus 4.6',m:'claude-opus-4-6',tag:'best'},
+      {id:'ant-opus',name:'Opus 4',m:'claude-opus-4-20250514',tag:'hot'},
+      {id:'ant-sonnet45',name:'Sonnet 4.5',m:'claude-sonnet-4-5-20250929',tag:'new'},
+      {id:'ant-sonnet',name:'Sonnet 4',m:'claude-sonnet-4-20250514'},
+      {id:'ant-haiku',name:'Haiku 3.5',m:'claude-3-5-haiku-20241022',tag:'fast'},
+    ]
+  },
+  openrouter: {
+    name:'🌐 OpenRouter', color:'openrouter',
+    apiType:'openai', baseUrl:'https://openrouter.ai/api/v1',
+    keyId:'openrouter',
+    models:[
+      {id:'or-c45s',name:'Claude Sonnet 4.5',m:'anthropic/claude-sonnet-4-5-20250929',tag:'best'},
+      {id:'or-g54',name:'GPT-5.4',m:'openai/gpt-5.4',tag:'best'},
+      {id:'or-grok3',name:'Grok 3',m:'x-ai/grok-3-beta',tag:'hot'},
+      {id:'or-gemini25f',name:'Gemini 2.5 Flash',m:'google/gemini-2.5-flash',tag:'fast'},
+      {id:'or-dsv3',name:'DeepSeek V3',m:'deepseek/deepseek-chat',tag:'hot'},
+      {id:'or-dsr1',name:'DeepSeek R1',m:'deepseek/deepseek-r1',tag:'new'},
+      {id:'or-llama33',name:'Llama 3.3 70B',m:'meta-llama/llama-3.3-70b-instruct',tag:'fast'},
+      {id:'or-perplx',name:'Perplexity Sonar',m:'perplexity/sonar-pro',tag:'hot'},
+    ]
+  },
+  zai: {
+    name:'🧠 Z.ai', color:'zai',
+    apiType:'openai', baseUrl:'https://api.z.ai/api/paas/v4',
+    keyId:'zai',
+    models:[
+      {id:'zai-glm5',name:'GLM-5',m:'glm-5',tag:'best'},
+      {id:'zai-glm47',name:'GLM-4.7',m:'glm-4.7',tag:'hot'},
+      {id:'zai-glm47f',name:'GLM-4.7 Flash',m:'glm-4.7-flash',tag:'fast'},
+      {id:'zai-glm45',name:'GLM-4.5',m:'glm-4.5'},
+    ]
+  },
+};
 
-  // Elements
-  const recBtn = document.getElementById('recBtn');
-  const recIcon = document.getElementById('recIcon');
-  const recLabel = document.getElementById('recLabel');
-  const recTimer = document.getElementById('recTimer');
-  const pipeline = document.getElementById('pipeline');
-  const errorMsg = document.getElementById('errorMsg');
+// API 키 설정
+const API_KEYS_CONFIG = [
+  {id:'anthropic', label:'🧠 Claude (Anthropic)', placeholder:'sk-ant-...'},
+  {id:'openai',    label:'🤖 OpenAI',              placeholder:'sk-...'},
+  {id:'gemini',    label:'💎 Gemini (Google)',      placeholder:'AIza...'},
+  {id:'groq',      label:'🚀 Groq',                placeholder:'gsk_...'},
+  {id:'openrouter',label:'🌐 OpenRouter',           placeholder:'sk-or-...'},
+  {id:'xai',       label:'🤖 xAI (Grok)',           placeholder:'xai-...'},
+  {id:'deepseek',  label:'💰 DeepSeek',             placeholder:'sk-...'},
+  {id:'sambanova', label:'🔥 SambaNova',            placeholder:'...'},
+  {id:'cerebras',  label:'⚡ Cerebras',             placeholder:'csk-...'},
+  {id:'zai',       label:'🧠 Z.ai (GLM)',           placeholder:'...'},
+];
 
-  // Load saved key
-  const savedKey = localStorage.getItem('openai_api_key') || '';
-  if (savedKey) {
-    document.getElementById('apiKey').value = savedKey;
-    document.getElementById('apiStatus').classList.add('show');
-  }
+const apiKeys = {};
 
-  // Load saved model
-  const savedModel = localStorage.getItem('gpt_model');
-  if (savedModel) document.getElementById('gptModel').value = savedModel;
+// ===== DEFAULT API KEYS (from AIARTstudio) =====
+const DEFAULT_KEYS = {
+    cerebras: "csk-8r8vvjk25thdvvjj26ww99dncmp8tfx54kvk3e2r2d5emvkj",
+    gemini: "AIzaSyDKnGmu4bc19TGw0z8zdGWx6YS6COt_yzs",
+    openrouter: "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",
+    groq: "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",
+    deepseek: "sk-17170310fd824742bd4211bf01cb9446",
+    xai: "xai-WTbqYCtC2nVUnQLxWEt64WS9xTArwGt6XTNjTcHqicD2xnxE4NgFdsONl9ADu4xWmkg2Ov2uCJLMqi6Y",
+    openai: "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",
+    anthropic: "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",
+    sambanova: "ef80bf16-25df-4da2-a984-83f073ba4a41",
+    zai: "300dcbddf53c45ae9aad7ddd586f3fd0.SAUV4CGpUpY4xrtA"
+};
 
-  // Load saved prompt
-  const savedPrompt = localStorage.getItem('soap_prompt');
-  if (savedPrompt) document.getElementById('soapPrompt').value = savedPrompt;
+function getKey(id) {
+    return apiKeys[id] || DEFAULT_KEYS[id] || '';
+}
 
-  function saveKey() {
-    const key = document.getElementById('apiKey').value.trim();
-    if (!key) return;
-    localStorage.setItem('openai_api_key', key);
-    document.getElementById('apiStatus').classList.add('show');
-  }
+// SOAP 시스템 프롬프트 (상세도별)
+const SOAP_PROMPTS = {
+  brief: `전문의의 진료기록 변환 AI.
+입력된 진료 내용을 SOAP 형식으로 변환.
 
-  function toggleSettings() {
-    const panel = document.getElementById('settingsPanel');
-    panel.classList.toggle('show');
-  }
+규칙:
+1. 최대한 간결하게. 각 항목 1-2줄.
+2. 핵심만. 불필요한 수식어 제거.
+3. 없는 정보는 적지 말 것.
+4. A(평가)와 P(계획)에 집중. S/O는 최소한으로.
 
-  function showError(msg) {
-    errorMsg.textContent = msg;
-    errorMsg.classList.add('show');
-    setTimeout(() => errorMsg.classList.remove('show'), 8000);
-  }
+반드시 아래 형식으로만 출력:
+S: [핵심 증상만]
+O: [핵심 소견만]
+A: [진단명]
+P: [치료 계획]`,
 
-  function updateTimer() {
-    seconds++;
-    const m = String(Math.floor(seconds / 60)).padStart(2, '0');
-    const s = String(seconds % 60).padStart(2, '0');
-    recTimer.textContent = `${m}:${s}`;
-  }
+  normal: `전문의의 진료기록 변환 AI.
+입력된 진료 내용을 SOAP 형식으로 변환.
 
-  async function toggleRecord() {
-    if (isRecording) {
-      stopRecording();
-    } else {
-      startRecording();
-    }
-  }
+규칙:
+1. S/O는 적절한 분량. A/P는 충실히 작성.
+2. 없는 정보는 추측 금지.
+3. EMR 붙여넣기 최적화된 간결한 문장.
+4. 해당 전공 분야의 주요 검사 소견 포함.
 
-  async function startRecording() {
-    const key = document.getElementById('apiKey').value.trim() || localStorage.getItem('openai_api_key');
-    if (!key) {
-      showError('OpenAI API Key를 입력해주세요');
-      return;
-    }
+반드시 아래 형식으로만 출력:
+S: [주관적 정보]
+O: [객관적 정보]
+A: [평가/진단]
+P: [계획]`,
 
+  detailed: `전문의의 진료기록 변환 AI.
+입력된 진료 내용을 상세 SOAP 형식으로 변환.
+
+규칙:
+1. S: 주소증(CC), 발병시기, 악화/완화인자, 과거력, 동반증상 모두 기술.
+2. O: 활력징후, 이학적검사, 영상소견 상세 기술.
+3. A: 감별진단 포함. 주진단 + R/O 진단. ICD코드 가능하면 병기.
+4. P: 검사계획, 약물(용량/용법), 시술/수술계획, f/u 일정 상세히.
+5. 없는 정보는 "확인 필요"로 표시.
+
+반드시 아래 형식으로만 출력:
+S: [주관적 정보 - 상세]
+O: [객관적 정보 - 상세]
+A: [평가/진단 - 감별진단 포함]
+P: [계획 - 구체적 처방/일정]`
+};
+
+// ===== 초기화 =====
+function init() {
+  renderApiKeys();
+  renderModels();
+  loadProfile();
+}
+
+// ===== 의사 프로필 =====
+const PROFILE_FIELDS = ['pf-specialty','pf-title','pf-years','pf-interest','pf-patients','pf-background','pf-personal'];
+const PROFILE_DEFAULTS = {
+  'pf-specialty':'Spine Surgery',
+  'pf-title':'',
+  'pf-years':'20',
+  'pf-interest':'',
+  'pf-patients':'',
+  'pf-background':'',
+  'pf-personal':''
+};
+
+function saveProfile() {
+  const data = {};
+  PROFILE_FIELDS.forEach(id => { data[id] = document.getElementById(id)?.value || ''; });
+  localStorage.setItem('soap_profile', JSON.stringify(data));
+  updateProfileSummary();
+  showToast('💾 프로필 저장됨');
+}
+
+function loadProfile() {
+  const saved = localStorage.getItem('soap_profile');
+  if (saved) {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: { 
-          sampleRate: 16000,
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true
-        } 
+      const data = JSON.parse(saved);
+      PROFILE_FIELDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && data[id] !== undefined) el.value = data[id];
       });
+    } catch(e) {}
+  }
+  updateProfileSummary();
+}
 
-      // Try webm first, fall back to mp4
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
-        ? 'audio/webm;codecs=opus' 
-        : MediaRecorder.isTypeSupported('audio/mp4')
-          ? 'audio/mp4'
-          : '';
+function resetProfile() {
+  PROFILE_FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = PROFILE_DEFAULTS[id] || '';
+  });
+  localStorage.removeItem('soap_profile');
+  updateProfileSummary();
+  showToast('🔄 기본값(NS)으로 초기화');
+}
 
-      mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
-      audioChunks = [];
+function updateProfileSummary() {
+  const spec = document.getElementById('pf-specialty')?.value?.trim() || 'Spine Surgery';
+  const yrs = document.getElementById('pf-years')?.value?.trim();
+  const title = document.getElementById('pf-title')?.value?.trim();
+  let summary = `NS · ${spec}`;
+  if (yrs) summary += ` · ${yrs}년`;
+  if (title) summary += ` · ${title}`;
+  document.getElementById('profileSummary').textContent = summary;
+}
 
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunks.push(e.data);
-      };
+function getProfileContext() {
+  const spec = document.getElementById('pf-specialty')?.value?.trim() || 'Spine Surgery';
+  const title = document.getElementById('pf-title')?.value?.trim();
+  const yrs = document.getElementById('pf-years')?.value?.trim();
+  const interest = document.getElementById('pf-interest')?.value?.trim();
+  const patients = document.getElementById('pf-patients')?.value?.trim();
+  const bg = document.getElementById('pf-background')?.value?.trim();
+  
+  let ctx = `Neurosurgery (${spec})`;
+  if (yrs) ctx += `, ${yrs}년 경력`;
+  if (title) ctx += `, ${title}`;
+  if (interest) ctx += `. 주된 관심사: ${interest}`;
+  if (patients) ctx += `. 주된 환자군: ${patients}`;
+  if (bg) ctx += `. 약력: ${bg}`;
+  return ctx;
+}
 
-      mediaRecorder.onstop = () => {
-        stream.getTracks().forEach(t => t.stop());
-        const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
-        const blob = new Blob(audioChunks, { type: mimeType || 'audio/webm' });
-        processAudio(blob, ext);
-      };
+function renderApiKeys() {
+  const wrap = document.getElementById('apiWrap');
+  wrap.innerHTML = API_KEYS_CONFIG.map(cfg => `
+    <div class="api-card">
+      <label>${cfg.label}</label>
+      <div class="api-row">
+        <input type="password" class="api-inp" id="key_${cfg.id}" 
+               placeholder="${cfg.placeholder}"
+               oninput="saveKey('${cfg.id}',this.value)">
+        <span class="api-st no" id="st_${cfg.id}">미입력</span>
+      </div>
+    </div>
+  `).join('');
 
-      mediaRecorder.start(1000);
-      isRecording = true;
-      seconds = 0;
-      recBtn.classList.add('recording');
-      recLabel.textContent = '탭하여 녹음 중지';
-      recTimer.classList.add('show');
-      timerInterval = setInterval(updateTimer, 1000);
+  // 로컬스토리지에서 복원 + DEFAULT_KEYS 반영
+  API_KEYS_CONFIG.forEach(cfg => {
+    const saved = localStorage.getItem('soap_key_' + cfg.id);
+    if (saved) {
+      document.getElementById('key_' + cfg.id).value = saved;
+      apiKeys[cfg.id] = saved;
+      updateKeyStatus(cfg.id, 'custom');
+    } else if (DEFAULT_KEYS[cfg.id]) {
+      updateKeyStatus(cfg.id, 'default');
+    }
+  });
+}
 
-      // Reset previous results
-      errorMsg.classList.remove('show');
-    } catch (err) {
-      showError('마이크 접근 실패 — file:// 프로토콜에서는 마이크가 차단됩니다. 아래 파일 업로드를 이용하세요.');
+function saveKey(id, val) {
+  val = val.trim();
+  if (val.length > 10) {
+    apiKeys[id] = val;
+    localStorage.setItem('soap_key_' + id, val);
+    updateKeyStatus(id, 'custom');
+  } else {
+    delete apiKeys[id];
+    localStorage.removeItem('soap_key_' + id);
+    updateKeyStatus(id, DEFAULT_KEYS[id] ? 'default' : 'none');
+  }
+}
+
+function updateKeyStatus(id, status) {
+  const el = document.getElementById('st_' + id);
+  if (!el) return;
+  if (status === 'custom') {
+    el.textContent = '✓ 커스텀';
+    el.className = 'api-st ok';
+  } else if (status === 'default') {
+    el.textContent = '🔑 기본키';
+    el.className = 'api-st ok';
+  } else {
+    el.textContent = '미입력';
+    el.className = 'api-st no';
+  }
+}
+
+function renderModels() {
+  const list = document.getElementById('modelList');
+  list.innerHTML = Object.entries(PROVIDERS).map(([key, prov]) => `
+    <div class="provider prov-${prov.color}">
+      <div class="prov-hdr" onclick="toggleProv(this)">
+        <span>${prov.name}</span>
+        <span class="cnt">${prov.models.length}</span>
+      </div>
+      <div class="prov-body">
+        ${prov.models.map(m => `
+          <label class="model-cb" data-pid="${key}" data-mid="${m.id}">
+            <input type="checkbox" value="${m.id}" onchange="updCount()">
+            ${m.name}
+            ${m.tag ? `<span class="tag tag-${m.tag}">${m.tag==='best'?'★':m.tag==='hot'?'🔥':m.tag==='fast'?'⚡':'NEW'}</span>` : ''}
+          </label>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+  updCount();
+}
+
+function toggleProv(hdr) {
+  const body = hdr.nextElementSibling;
+  body.style.display = body.style.display === 'none' ? 'flex' : 'none';
+}
+
+function updCount() {
+  const cnt = document.querySelectorAll('.model-cb input:checked').length;
+  document.getElementById('selCnt').textContent = cnt;
+}
+
+function selAll() { document.querySelectorAll('.model-cb input').forEach(c=>c.checked=true); updCount(); }
+function selNone() { document.querySelectorAll('.model-cb input').forEach(c=>c.checked=false); updCount(); }
+function selBest() {
+  selNone();
+  document.querySelectorAll('.model-cb').forEach(label => {
+    if (label.querySelector('.tag-best')) { label.querySelector('input').checked = true; }
+  });
+  updCount();
+}
+function selFast() {
+  selNone();
+  document.querySelectorAll('.model-cb').forEach(label => {
+    if (label.querySelector('.tag-fast')) { label.querySelector('input').checked = true; }
+  });
+  updCount();
+}
+
+function loadExample() {
+  const examples = [
+    `50대 남성 환자. 허리 통증 + 우측 다리 저림 3주.
+걸으면 더 아프고 앉으면 완화. VAS 7점.
+SLR 우측 양성 30도. 우측 슬개건반사 감소.
+MRI 미시행. 고혈압약 복용 중.
+계획: L-spine MRI, 가바펜틴 처방, 물리치료.`,
+    `65세 여성. 양측 하지 방사통 + 간헐적 파행 6개월.
+10분 보행 시 양측 종아리 저림. 앉으면 호전.
+L4-5 spinal stenosis on MRI. VAS 6/10.
+DTR 정상. MMT 양측 EHL 4+/5.
+이전 물리치료 3개월 효과 미미.
+신경차단술 고려. 수술 상담 예정.`,
+    `42세 남성. 교통사고 후 경부통 + 좌측 상지 저림 2일.
+C5-6 level foraminal HNP on CT.
+Spurling test 좌측 양성. 좌측 삼두근 반사 감소.
+VAS 8/10. 좌측 grip strength 감소.
+경추 MRI 촬영 예정. 경추 보조기 착용.
+프레가발린 75mg bid 처방.`,
+    `70세 남성 L3-4 TLIF 수술 후 2주 f/u.
+수술 부위 통증 VAS 3으로 호전. 이전 VAS 9.
+하지 방사통 소실. 보행 가능.
+수술 절개부 clean, 봉합사 제거 완료.
+X-ray: instrumentation 위치 양호.
+재활의학과 의뢰. 보조기 4주 더 착용.`
+  ];
+  const idx = Math.floor(Math.random() * examples.length);
+  document.getElementById('inputTxt').value = examples[idx];
+  showToast('📋 예시 ' + (idx+1) + ' 로드됨');
+}
+
+// ===== API 호출 =====
+async function callAPI(provKey, modelInfo, inputText, detailLevel, langMode) {
+  const prov = PROVIDERS[provKey];
+  const key = getKey(prov.keyId);
+  if (!key) throw new Error(`${prov.name} API 키 없음`);
+  
+  const langInstruction = langMode === 'bilingual' 
+    ? `\n\n언어 규칙:
+- 의학용어/진단명: 반드시 한글 + 영어 병기 (예: 요추 추간판 탈출증 / Lumbar HNP)
+- 검사명/약어: 한글 + 영어 (예: 하지 직거상 검사 / SLR test)
+- 환자 호소 증상(S): 환자가 표현한 그대로 한글로 기록 (예: "허리가 아프고 다리가 당겨요")`
+    : `\n\n언어 규칙:
+- 의학용어/진단명/검사명: 영어 약어 및 영어 표기 위주로 작성 (예: Lumbar HNP, SLR(+), DTR decreased)
+- 환자 호소 증상(S): 환자가 표현한 그대로 한글로 기록 (예: "허리가 아프고 다리가 당겨요")
+- O/A/P 항목: 가능한 영어 의학용어와 약어로 간결하게 작성`;
+
+  const profileCtx = getProfileContext();
+  const profileLine = `\n\n의사 정보: ${profileCtx}`;
+  const sysPrompt = (SOAP_PROMPTS[detailLevel] || SOAP_PROMPTS.normal) + langInstruction + profileLine;
+
+  if (prov.apiType === 'anthropic') {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key': key,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body: JSON.stringify({
+        model: modelInfo.m,
+        max_tokens: 1200,
+        system: sysPrompt,
+        messages:[{role:'user', content:`다음 진료 내용을 SOAP으로 변환해줘:\n\n${inputText}`}]
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    if (!data.content?.[0]?.text) throw new Error('Anthropic: 응답 없음');
+    return data.content[0].text;
+
+  } else if (prov.apiType === 'gemini') {
+    const url = `${prov.baseUrl}/models/${modelInfo.m}:generateContent?key=${key}`;
+    const res = await fetch(url, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        system_instruction:{parts:[{text: sysPrompt}]},
+        contents:[{parts:[{text:`다음 진료 내용을 SOAP으로 변환해줘:\n\n${inputText}`}]}]
+      })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    if (!data.candidates?.[0]?.content?.parts?.[0]?.text) throw new Error('Gemini: 응답 없음');
+    return data.candidates[0].content.parts[0].text;
+
+  } else {
+    // OpenAI 호환
+    const res = await fetch(`${prov.baseUrl}/chat/completions`, {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization': `Bearer ${key}`,
+        ...(provKey==='openrouter' ? {'HTTP-Referer':'https://soap.kr','X-Title':'SOAP Converter'} : {})
+      },
+      body: JSON.stringify({
+        model: modelInfo.m,
+        ...((provKey==='openai' && (modelInfo.m.startsWith('o') || modelInfo.m.startsWith('gpt-5'))) 
+          ? {max_completion_tokens: 1200} 
+          : {max_tokens: 1200}),
+        messages:[
+          {role:'system', content: sysPrompt},
+          {role:'user', content:`다음 진료 내용을 SOAP으로 변환해줘:\n\n${inputText}`}
+        ]
+      })
+    });
+    const data = await res.json();
+    if (data.error) {
+      const msg = data.error.message || JSON.stringify(data.error);
+      // Z.ai 검열 에러 처리
+      if (provKey === 'zai') {
+        if (msg.includes('不安全') || msg.includes('敏感') || msg.includes('sensitive')) 
+          throw new Error('🔞 Z.ai 검열 차단됨 (중국 AI 제한)');
+        if (msg.includes('余额不足') || msg.includes('balance')) 
+          throw new Error('💸 Z.ai 잔액 부족');
+      }
+      throw new Error(msg);
+    }
+    if (!data.choices?.[0]?.message?.content) throw new Error(`${prov.name}: 응답 없음`);
+    return data.choices[0].message.content;
+  }
+}
+
+// ===== SOAP 파싱 (강화) =====
+function parseSOAP(text) {
+  const sections = {S:'',O:'',A:'',P:''};
+  if (!text || typeof text !== 'string') return sections;
+  const lines = text.split('\n');
+  let cur = null;
+  for (const line of lines) {
+    // S: / S： / **S:** / ## S / [S] / SUBJECTIVE: 등 다양한 패턴 매칭
+    const m = line.match(/^(?:\*\*)?(?:##?\s*)?(?:\[)?([SOAP])(?:\])?(?:\*\*)?[\s]*[:：\-|]?\s*(.*)/i);
+    const m2 = line.match(/^(?:\*\*)?(Subjective|Objective|Assessment|Plan)(?:\*\*)?[\s]*[:：\-|]?\s*(.*)/i);
+    if (m && 'SOAP'.includes(m[1].toUpperCase())) {
+      cur = m[1].toUpperCase();
+      if(m[2]?.trim()) sections[cur] += m[2].trim()+'\n';
+    } else if (m2) {
+      const map = {subjective:'S',objective:'O',assessment:'A',plan:'P'};
+      cur = map[m2[1].toLowerCase()];
+      if(m2[2]?.trim()) sections[cur] += m2[2].trim()+'\n';
+    } else if (cur && line.trim()) {
+      // **볼드** 마크다운 제거
+      sections[cur] += line.replace(/\*\*/g,'').trim()+'\n';
     }
   }
+  return sections;
+}
 
-  function stopRecording() {
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-      mediaRecorder.stop();
-    }
-    isRecording = false;
-    clearInterval(timerInterval);
-    recBtn.classList.remove('recording');
-    recBtn.classList.add('processing');
-    recLabel.textContent = '처리 중...';
-    recTimer.classList.remove('show');
-  }
+function renderSOAPBlocks(text, modelId) {
+  const s = parseSOAP(text);
+  const labels = {S:'Subjective',O:'Objective',A:'Assessment',P:'Plan'};
+  return ['S','O','A','P'].map(k => `
+    <div class="soap-block ${k.toLowerCase()}">
+      <div class="soap-lbl" style="display:flex;justify-content:space-between;align-items:center">
+        <span>${k} · ${labels[k]}</span>
+        ${modelId ? `<button class="btn-sm" style="font-size:9px;padding:2px 6px" onclick="copyBlock('${modelId}','${k}')">📋</button>` : ''}
+      </div>
+      <div class="soap-txt">${(s[k]||'확인 필요').trim()}</div>
+    </div>
+  `).join('');
+}
 
-  async function processAudio(blob, ext) {
-    const key = document.getElementById('apiKey').value.trim() || localStorage.getItem('openai_api_key');
-    const lang = document.getElementById('whisperLang').value;
-    const model = document.getElementById('gptModel').value;
-    const prompt = document.getElementById('soapPrompt').value;
+// ===== 메인 실행 =====
+async function runAll() {
+  const inputText = document.getElementById('inputTxt').value.trim();
+  if (!inputText) { showToast('⚠️ 진료 내용을 입력하세요!'); return; }
+  const detailLevel = getDetailLevel();
+  const langMode = getLangMode();
 
-    // Save settings
-    localStorage.setItem('gpt_model', model);
-    localStorage.setItem('soap_prompt', prompt);
+  // 선택된 모델 수집
+  const selected = [];
+  document.querySelectorAll('.model-cb input:checked').forEach(cb => {
+    const label = cb.closest('.model-cb');
+    const pid = label.dataset.pid;
+    const mid = label.dataset.mid;
+    const prov = PROVIDERS[pid];
+    const model = prov.models.find(m => m.id === mid);
+    if (model) selected.push({pid, prov, model});
+  });
 
-    // Show pipeline
-    pipeline.classList.add('show');
-    setStep('step1', 'active');
-    setStep('step2', '');
+  if (selected.length === 0) { showToast('⚠️ AI 모델을 선택하세요!'); return; }
 
+  const btn = document.getElementById('goBtn');
+  btn.disabled = true;
+  btn.textContent = `⏳ ${selected.length}개 AI 동시 변환 중...`;
+
+  const resultsDiv = document.getElementById('results');
+  resultsDiv.innerHTML = '';
+
+  // 각 모델 카드 미리 생성 (로딩 상태)
+  const cardMap = {};
+  selected.forEach(({pid, prov, model}) => {
+    const cardId = `rc_${model.id}`;
+    const colorVar = `var(--${prov.color}, var(--accent))`;
+    const div = document.createElement('div');
+    div.className = 'result-card';
+    div.id = cardId;
+    div.innerHTML = `
+      <div class="result-hdr">
+        <div class="model-badge">
+          <span class="model-name">${model.name}</span>
+          <span class="model-provider" style="background:${colorVar};color:#fff">${prov.name}</span>
+          ${model.tag ? `<span class="tag tag-${model.tag}">${model.tag==='best'?'★':model.tag==='hot'?'🔥':model.tag==='fast'?'⚡':'NEW'}</span>` : ''}
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn-sm" id="copy_${model.id}" onclick="copyCard('${model.id}')" disabled>📋 복사</button>
+          <button class="btn-sm" id="send_${model.id}" onclick="sendCard('${model.id}')" disabled style="color:var(--accent)">📡 PC</button>
+        </div>
+      </div>
+      <div class="result-body" id="body_${model.id}">
+        <div class="loading-box">
+          <div class="spinner"></div>
+          <div class="loading-model">${prov.name} · ${model.name} 변환 중...</div>
+        </div>
+      </div>
+    `;
+    resultsDiv.appendChild(div);
+    cardMap[model.id] = {prov, model};
+  });
+
+  // 병렬 실행
+  let done = 0;
+  const total = selected.length;
+  const fill = document.getElementById('progressFill');
+
+  await Promise.allSettled(selected.map(async ({pid, prov, model}) => {
     try {
-      // Step 1: Whisper STT
-      const formData = new FormData();
-      const filename = blob.name || `recording.${ext}`;
-      formData.append('file', blob, filename);
-      formData.append('model', 'whisper-1');
-      if (lang) formData.append('language', lang);
-      formData.append('response_format', 'text');
-
-      const sttRes = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${key}` },
-        body: formData
-      });
-
-      if (!sttRes.ok) {
-        const err = await sttRes.json().catch(() => ({}));
-        throw new Error(`Whisper 오류: ${err.error?.message || sttRes.statusText}`);
-      }
-
-      const transcript = await sttRes.text();
-      setStep('step1', 'done');
-
-      // Show transcript
-      document.getElementById('transcriptBody').textContent = transcript;
-      document.getElementById('transcriptBlock').classList.add('show');
-
-      // Step 2: GPT SOAP conversion
-      setStep('step2', 'active');
-
-      const gptRes = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${key}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: model,
-          messages: [
-            { role: 'system', content: prompt },
-            { role: 'user', content: `다음은 진료 녹취록입니다:\n\n${transcript}` }
-          ],
-          temperature: 0.3,
-          max_tokens: 2000
-        })
-      });
-
-      if (!gptRes.ok) {
-        const err = await gptRes.json().catch(() => ({}));
-        throw new Error(`GPT 오류: ${err.error?.message || gptRes.statusText}`);
-      }
-
-      const gptData = await gptRes.json();
-      const soapText = gptData.choices[0].message.content;
-      setStep('step2', 'done');
-
-      // Render SOAP
-      const soapBody = document.getElementById('soapBody');
-      soapBody.innerHTML = renderSOAP(soapText);
-      soapBody.setAttribute('data-raw', soapText);
-      document.getElementById('soapBlock').classList.add('show');
-
-    } catch (err) {
-      showError(err.message);
+      const result = await callAPI(pid, model, inputText, detailLevel, langMode);
+      document.getElementById('body_' + model.id).innerHTML = renderSOAPBlocks(result, model.id);
+      document.getElementById('copy_' + model.id).disabled = false;
+      document.getElementById('send_' + model.id).disabled = false;
+      // 결과 저장
+      cardMap[model.id].result = result;
+    } catch(err) {
+      document.getElementById('body_' + model.id).innerHTML = `
+        <div class="err-box">❌ 오류: ${err.message}</div>`;
     } finally {
-      recBtn.classList.remove('processing');
-      recLabel.textContent = '탭하여 녹음 시작';
+      done++;
+      fill.style.width = (done/total*100) + '%';
     }
+  }));
+
+  btn.disabled = false;
+  btn.textContent = '⚡ 선택된 AI 모두 SOAP 변환';
+  showToast(`✅ ${done}개 완료!`);
+  showImageGen();
+
+  // cardMap 전역 저장
+  window._cardMap = cardMap;
+}
+
+function copyCard(modelId) {
+  const body = document.getElementById('body_' + modelId);
+  const blocks = body.querySelectorAll('.soap-block');
+  if (!blocks.length) return;
+  let text = '';
+  const keys = ['S','O','A','P'];
+  blocks.forEach((b, i) => {
+    text += `${keys[i]}: ${b.querySelector('.soap-txt').textContent.trim()}\n\n`;
+  });
+  navigator.clipboard.writeText(text.trim()).then(() => showToast('✅ EMR 복사 완료! 바로 붙여넣기 가능'));
+}
+
+function sendCard(modelId) {
+  if (!peerConn || !peerConn.open) { showToast('⚠️ PC 미연결. 💻 PC 연동에서 연결하세요'); return; }
+  const body = document.getElementById('body_' + modelId);
+  const blocks = body.querySelectorAll('.soap-block');
+  if (!blocks.length) return;
+  let text = '';
+  const keys = ['S','O','A','P'];
+  blocks.forEach((b, i) => {
+    text += `${keys[i]}: ${b.querySelector('.soap-txt').textContent.trim()}\n\n`;
+  });
+  peerConn.send({type:'soap', text: text.trim()});
+  showToast('📡 PC로 전송됨!');
+}
+
+function copyBlock(modelId, section) {
+  const body = document.getElementById('body_' + modelId);
+  const blocks = body.querySelectorAll('.soap-block');
+  const idx = 'SOAP'.indexOf(section);
+  if (blocks[idx]) {
+    const txt = blocks[idx].querySelector('.soap-txt').textContent.trim();
+    navigator.clipboard.writeText(`${section}: ${txt}`).then(() => showToast(`✅ ${section} 블록 복사됨`));
   }
+}
 
-  function setStep(id, state) {
-    const el = document.getElementById(id);
-    el.className = 'pipe-step' + (state ? ' ' + state : '');
-  }
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
 
-  function renderSOAP(text) {
-    return text
-      .replace(/### (S|O|A|P) \((.+?)\)/g, '<h3>$1 ($2)</h3>')
-      .replace(/### (.+)/g, '<h3>$1</h3>')
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\n/g, '<br>');
-  }
+// Ctrl+Enter 단축키
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'Enter') runAll();
+});
 
-  function copyText(id, btn) {
-    const el = document.getElementById(id);
-    const raw = el.getAttribute('data-raw') || el.textContent;
-    navigator.clipboard.writeText(raw).then(() => {
-      btn.textContent = '✓ 복사됨';
-      btn.classList.add('copied');
-      setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('copied'); }, 2000);
-    });
-  }
-
-  function copyPlainSOAP(btn) {
-    const el = document.getElementById('soapBody');
-    const raw = el.getAttribute('data-raw') || el.textContent;
-    // Strip markdown
-    const plain = raw.replace(/###\s*/g, '').replace(/\*\*/g, '');
-    navigator.clipboard.writeText(plain).then(() => {
-      btn.textContent = '✓ 복사됨';
-      btn.classList.add('copied');
-      setTimeout(() => { btn.textContent = '텍스트만 복사'; btn.classList.remove('copied'); }, 2000);
-    });
-  }
-
-  async function handleFileUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const key = document.getElementById('apiKey').value.trim() || localStorage.getItem('openai_api_key');
-    if (!key) {
-      showError('OpenAI API Key를 입력해주세요');
-      event.target.value = '';
-      return;
+// 상세도 & 언어모드 토글 (라디오) + 이미지 엔진 (체크박스)
+document.querySelectorAll('.detail-opt').forEach(opt => {
+  opt.addEventListener('click', (e) => {
+    const inp = opt.querySelector('input');
+    if (inp.type === 'radio') {
+      const name = inp.name;
+      document.querySelectorAll(`.detail-opt input[name="${name}"]`).forEach(i => {
+        i.closest('.detail-opt').classList.remove('sel');
+      });
+      opt.classList.add('sel');
+      inp.checked = true;
+    } else if (inp.type === 'checkbox') {
+      // 체크박스는 클릭 시 토글
+      if (e.target !== inp) inp.checked = !inp.checked;
+      opt.classList.toggle('sel', inp.checked);
     }
+  });
+});
 
-    // Check file size (Whisper limit: 25MB)
-    if (file.size > 25 * 1024 * 1024) {
-      showError('파일 크기가 25MB를 초과합니다. 더 짧게 나누어 주세요.');
-      event.target.value = '';
-      return;
-    }
+function getDetailLevel() {
+  return document.querySelector('input[name="detailLevel"]:checked')?.value || 'normal';
+}
 
-    const uploadZone = document.getElementById('uploadZone');
-    uploadZone.classList.add('processing');
-    document.querySelector('.upload-text').textContent = '처리 중: ' + file.name;
+function getLangMode() {
+  return document.querySelector('input[name="langMode"]:checked')?.value || 'en';
+}
 
-    errorMsg.classList.remove('show');
-    processAudio(file, file.name.split('.').pop()).finally(() => {
-      uploadZone.classList.remove('processing');
-      document.querySelector('.upload-text').textContent = '녹음 파일 선택';
-      event.target.value = '';
-    });
+// ===== KREA 엔드포인트 (Flux, NanoBanana 등) =====
+const KREA_ENDPOINTS = {
+  'flux-1-dev':'/generate/image/bfl/flux-1-dev',
+  'nano-banana-pro':'/generate/image/google/nano-banana-pro',
+  'nano-banana':'/generate/image/google/nano-banana',
+};
+
+// ===== SOAP → 의료 이미지 프롬프트 자동생성 =====
+function buildMedImagePrompt() {
+  if (!window._cardMap) return '';
+  // 첫 번째 성공한 SOAP 결과에서 A/P 추출
+  let soapText = '';
+  for (const id of Object.keys(window._cardMap)) {
+    if (window._cardMap[id].result) { soapText = window._cardMap[id].result; break; }
   }
+  if (!soapText) return '';
+  const parsed = parseSOAP(soapText);
+  const assessment = parsed.A?.trim() || '';
+  const subjective = parsed.S?.trim() || '';
+  // 핵심 진단명/증상 추출하여 의료 일러스트 프롬프트 생성
+  return `medical illustration, anatomical diagram, ${assessment}, patient symptoms: ${subjective}, clean medical textbook style, labeled anatomy, professional healthcare infographic, white background, high detail, educational`.substring(0, 800);
+}
+
+// SOAP 완료 후 이미지 섹션 표시
+function showImageGen() {
+  const card = document.getElementById('imgGenCard');
+  card.style.display = 'block';
+  const prompt = buildMedImagePrompt();
+  if (prompt) document.getElementById('imgPromptTxt').value = prompt;
+}
+
+// ===== 이미지 생성 엔진들 =====
+
+// 1. NovelAI
+async function genNAI(prompt) {
+  const key = getKey('novelai');
+  if (!key) throw new Error('NovelAI 키 없음');
+  const body = {
+    input: `masterpiece, best quality, ${prompt}`,
+    model: 'nai-diffusion-4-5-full',
+    action: 'generate',
+    parameters: {
+      params_version:3, width:832, height:1216, n_samples:1,
+      sampler:'k_dpmpp_2m_sde', steps:28, scale:5.3,
+      uncond_scale:1.0, cfg_rescale:0, noise_schedule:'karras',
+      autoSmea:true, dynamic_thresholding:false,
+      qualityToggle:true, ucPreset:0, legacy:false, legacy_v3_extend:false,
+      add_original_image:true, prefer_brownian:true,
+      deliberate_euler_ancestral_bug:false, controlnet_strength:1,
+      skip_cfg_above_sigma:null,
+      v4_model_preset:'Illustrative',
+      negative_prompt:'worst quality, bad quality, lowres, bad anatomy, text, watermark, signature, blurry',
+      seed: Math.floor(Math.random()*4294967295),
+      v4_prompt:{caption:{base_caption:`masterpiece, best quality, ${prompt}`,char_captions:[]},use_coords:false,use_order:true},
+      v4_negative_prompt:{caption:{base_caption:'worst quality, bad quality, lowres, bad anatomy, text, watermark',char_captions:[]},use_coords:false,use_order:false,legacy_uc:false},
+      characterPrompts:[],
+      reference_image_multiple:[],reference_information_extracted_multiple:[],reference_strength_multiple:[]
+    }
+  };
+  const r = await fetch('https://image.novelai.net/ai/generate-image',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`,'Origin':'https://novelai.net','Referer':'https://novelai.net/'},
+    body:JSON.stringify(body)
+  });
+  if(!r.ok) throw new Error(`NAI ${r.status}`);
+  const zip = await JSZip.loadAsync(await r.arrayBuffer());
+  const fnames = Object.keys(zip.files);
+  if(fnames.length>0) return URL.createObjectURL(await zip.files[fnames[0]].async('blob'));
+  throw new Error('NAI: 이미지 없음');
+}
+
+// 2. GPT Image
+async function genGPTImage(prompt) {
+  const key = getKey('openai');
+  if(!key) throw new Error('OpenAI 키 없음');
+  const r = await fetch('https://api.openai.com/v1/images/generations',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},
+    body:JSON.stringify({model:'gpt-image-1',prompt:prompt.substring(0,4000),n:1,size:'1024x1024',quality:'medium'})
+  });
+  const d = await r.json();
+  if(d.error) throw new Error(d.error.message);
+  const b64 = d?.data?.[0]?.b64_json;
+  const url = d?.data?.[0]?.url;
+  if(b64){
+    const bytes = Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+    return URL.createObjectURL(new Blob([bytes],{type:'image/png'}));
+  }
+  if(url) return url;
+  throw new Error('GPT Image: 결과 없음');
+}
+
+// 3. Krea (NanoBanana, Flux)
+async function genKreaImg(prompt, model) {
+  const key = getKey('krea');
+  if(!key) throw new Error('Krea 키 없음');
+  const ep = KREA_ENDPOINTS[model];
+  if(!ep) throw new Error(`Krea: ${model} 엔드포인트 없음`);
+  const r = await fetch(`https://api.krea.ai${ep}`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},
+    body:JSON.stringify({prompt:prompt.substring(0,2500),width:1024,height:1024})
+  });
+  const d = await r.json();
+  if(!r.ok) throw new Error(`Krea(${model}): ${d.error?.message||d.message||r.status}`);
+  const jobId = d.job_id||d.id;
+  if(!jobId) throw new Error('Krea: Job ID 없음');
+  for(let i=0;i<60;i++){
+    await new Promise(r=>setTimeout(r,2000));
+    const sr = await fetch(`https://api.krea.ai/jobs/${jobId}`,{headers:{'Authorization':`Bearer ${key}`}});
+    const sd = await sr.json();
+    if(sd.status==='completed'){const url=sd.result?.urls?.[0]||sd.result?.url;if(url)return url;throw new Error('Krea: URL 없음');}
+    if(sd.status==='failed') throw new Error(`Krea: ${sd.error||'Failed'}`);
+  }
+  throw new Error('Krea: Timeout');
+}
+
+// 4. Grok Imagine
+async function genGrokImg(prompt) {
+  const key = getKey('xai');
+  if(!key) throw new Error('xAI 키 없음');
+  const r = await fetch('https://api.x.ai/v1/images/generations',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},
+    body:JSON.stringify({model:'grok-2-image',prompt:prompt.substring(0,4000),n:1,response_format:'b64_json'})
+  });
+  const d = await r.json();
+  if(d.error) throw new Error(d.error.message||JSON.stringify(d.error));
+  const b64 = d?.data?.[0]?.b64_json;
+  const url = d?.data?.[0]?.url;
+  if(b64){
+    const bytes = Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+    return URL.createObjectURL(new Blob([bytes],{type:'image/png'}));
+  }
+  if(url) return url;
+  throw new Error('Grok: 이미지 없음');
+}
+
+// ===== 메인 이미지 생성 =====
+async function genMedImages() {
+  const prompt = document.getElementById('imgPromptTxt').value.trim();
+  if(!prompt){showToast('⚠️ 이미지 프롬프트가 비어있습니다');return;}
+  
+  const engines = [];
+  document.querySelectorAll('input[name="imgEngine"]:checked').forEach(cb => engines.push(cb.value));
+  if(engines.length===0){showToast('⚠️ 이미지 엔진을 선택하세요');return;}
+
+  const resultsDiv = document.getElementById('imgResults');
+  resultsDiv.innerHTML = '';
+  const btn = document.getElementById('imgGoBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ 이미지 생성 중...';
+
+  // 엔진별 로딩 카드 생성
+  const engineLabels = {nai:'🎨 NovelAI',gpt:'🤖 GPT Image','nano-banana':'🍌 NanoBanana',grok:'⚡ Grok',flux:'🌊 Flux Dev'};
+  engines.forEach(eng => {
+    const div = document.createElement('div');
+    div.className = 'img-loading';
+    div.id = `img_${eng}`;
+    div.innerHTML = `<div style="text-align:center"><div class="spinner"></div><div style="font-size:11px;color:var(--dim);margin-top:6px">${engineLabels[eng]} 생성 중...</div></div>`;
+    resultsDiv.appendChild(div);
+  });
+
+  // 병렬 실행
+  await Promise.allSettled(engines.map(async eng => {
+    try {
+      let url;
+      switch(eng) {
+        case 'nai': url = await genNAI(prompt); break;
+        case 'gpt': url = await genGPTImage(prompt); break;
+        case 'nano-banana': url = await genKreaImg(prompt, 'nano-banana-pro'); break;
+        case 'grok': url = await genGrokImg(prompt); break;
+        case 'flux': url = await genKreaImg(prompt, 'flux-1-dev'); break;
+      }
+      const el = document.getElementById(`img_${eng}`);
+      el.className = 'img-result';
+      el.innerHTML = `
+        <img src="${typeof url==='object'?url.url:url}" onclick="window.open(this.src,'_blank')" title="클릭하면 원본 크기">
+        <div class="img-label"><span>${engineLabels[eng]}</span><button class="btn-sm" style="font-size:9px" onclick="downloadImg(this.closest('.img-result').querySelector('img').src,'soap_${eng}.png')">💾</button></div>
+      `;
+    } catch(err) {
+      const el = document.getElementById(`img_${eng}`);
+      el.className = 'img-err';
+      el.innerHTML = `❌ ${engineLabels[eng]}: ${err.message}`;
+    }
+  }));
+
+  btn.disabled = false;
+  btn.textContent = '🖼️ 선택 엔진으로 이미지 생성';
+  showToast('✅ 이미지 생성 완료!');
+}
+
+function downloadImg(src, filename) {
+  const a = document.createElement('a');
+  a.href = src; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+// ===== 입력 탭 전환 =====
+function switchInput(mode) {
+  document.querySelectorAll('.input-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.input-pane').forEach(p => p.classList.remove('active'));
+  document.querySelector(`.input-tab[onclick*="${mode}"]`).classList.add('active');
+  document.getElementById('pane-'+mode).classList.add('active');
+}
+
+// ===== 녹음 =====
+let mediaRecorder = null, audioChunks = [], isRecording = false, recInterval = null, recSeconds = 0;
+
+function updateRecTimer() {
+  recSeconds++;
+  const m = String(Math.floor(recSeconds/60)).padStart(2,'0');
+  const s = String(recSeconds%60).padStart(2,'0');
+  document.getElementById('recTimer').textContent = m+':'+s;
+}
+
+async function toggleRecord() {
+  if (isRecording) { stopRecording(); } else { startRecording(); }
+}
+
+async function startRecording() {
+  const key = getKey('openai');
+  if (!key) { showToast('⚠️ OpenAI API Key 필요 (Whisper STT)'); return; }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({audio:{sampleRate:16000,channelCount:1,echoCancellation:true,noiseSuppression:true}});
+    // Whisper 지원: mp3, mp4, mpeg, mpga, m4a, wav, webm, ogg, flac
+    const mimeTests = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/ogg;codecs=opus',
+      'audio/ogg',
+      'audio/mp4',
+      'audio/mpeg',
+      'audio/aac',
+    ];
+    let mime = '';
+    for (const m of mimeTests) {
+      if (MediaRecorder.isTypeSupported(m)) { mime = m; break; }
+    }
+    console.log('Recording MIME:', mime || 'default');
+    const mimeInfo = document.getElementById('recMimeInfo');
+    if (mimeInfo) mimeInfo.textContent = '포맷: ' + (mime || 'device default');
+    mediaRecorder = new MediaRecorder(stream, mime?{mimeType:mime}:{});
+    audioChunks = [];
+    mediaRecorder.ondataavailable = e => { if(e.data.size>0) audioChunks.push(e.data); };
+    mediaRecorder.onstop = async () => {
+      stream.getTracks().forEach(t=>t.stop());
+      const actualMime = mediaRecorder.mimeType || mime || 'audio/webm';
+      console.log('Actual MIME:', actualMime);
+      const blob = new Blob(audioChunks, {type: actualMime});
+      // MIME → Whisper 호환 확장자 매핑
+      let ext = 'webm';
+      if (actualMime.includes('mp4') || actualMime.includes('m4a')) ext = 'mp4';
+      else if (actualMime.includes('ogg')) ext = 'ogg';
+      else if (actualMime.includes('mpeg') || actualMime.includes('mp3')) ext = 'mp3';
+      else if (actualMime.includes('aac')) ext = 'mp4';
+      else if (actualMime.includes('3gpp')) ext = 'mp4'; // Samsung fallback
+      else if (actualMime.includes('webm')) ext = 'webm';
+      // WAV 변환 fallback: 알 수 없는 포맷이면 WAV로 변환
+      if (!['webm','mp4','ogg','mp3','wav','flac','m4a','mpeg','mpga'].includes(ext)) {
+        try {
+          const wavBlob = await convertToWav(blob);
+          runWhisper(wavBlob, 'recording.wav', 'sttPipeline', 'sttStep1', 'sttStep2');
+          return;
+        } catch(e) {
+          console.error('WAV 변환 실패:', e);
+          ext = 'webm'; // 그냥 시도
+        }
+      }
+      runWhisper(blob, 'recording.'+ext, 'sttPipeline', 'sttStep1', 'sttStep2');
+    };
+    mediaRecorder.start(1000);
+    isRecording = true; recSeconds = 0;
+    document.getElementById('recBtn').classList.add('recording');
+    document.getElementById('recLabel').textContent = '탭하여 녹음 중지';
+    document.getElementById('recTimer').classList.add('show');
+    recInterval = setInterval(updateRecTimer, 1000);
+  } catch(err) {
+    showToast('⚠️ 마이크 접근 실패 — HTTPS 필요. 파일 업로드 사용');
+  }
+}
+
+// WAV 변환 (브라우저 호환 안 되는 포맷 fallback)
+async function convertToWav(blob) {
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)({sampleRate:16000});
+  const arrayBuf = await blob.arrayBuffer();
+  const audioBuf = await audioCtx.decodeAudioData(arrayBuf);
+  const numCh = 1;
+  const sampleRate = 16000;
+  const samples = audioBuf.getChannelData(0);
+  const wavBuf = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(wavBuf);
+  function writeStr(offset, str) { for(let i=0;i<str.length;i++) view.setUint8(offset+i,str.charCodeAt(i)); }
+  writeStr(0,'RIFF');
+  view.setUint32(4, 36+samples.length*2, true);
+  writeStr(8,'WAVE');
+  writeStr(12,'fmt ');
+  view.setUint32(16,16,true);
+  view.setUint16(20,1,true);
+  view.setUint16(22,numCh,true);
+  view.setUint32(24,sampleRate,true);
+  view.setUint32(28,sampleRate*numCh*2,true);
+  view.setUint16(32,numCh*2,true);
+  view.setUint16(34,16,true);
+  writeStr(36,'data');
+  view.setUint32(40,samples.length*2,true);
+  for(let i=0;i<samples.length;i++){
+    const s = Math.max(-1,Math.min(1,samples[i]));
+    view.setInt16(44+i*2, s<0?s*0x8000:s*0x7FFF, true);
+  }
+  audioCtx.close();
+  return new Blob([wavBuf],{type:'audio/wav'});
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  isRecording = false;
+  clearInterval(recInterval);
+  document.getElementById('recBtn').classList.remove('recording');
+  document.getElementById('recBtn').classList.add('processing');
+  document.getElementById('recLabel').textContent = '처리 중...';
+  document.getElementById('recTimer').classList.remove('show');
+}
+
+// ===== 파일 업로드 =====
+async function handleFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const key = getKey('openai');
+  if (!key) { showToast('⚠️ OpenAI API Key 필요 (Whisper STT)'); event.target.value=''; return; }
+  if (file.size > 25*1024*1024) { showToast('⚠️ 파일 25MB 초과'); event.target.value=''; return; }
+  document.getElementById('uploadBox').classList.add('processing');
+  document.getElementById('uploadText').textContent = '처리 중: '+file.name;
+  await runWhisper(file, file.name, 'sttPipeline2', 'sttStep1b', 'sttStep2b');
+  document.getElementById('uploadBox').classList.remove('processing');
+  document.getElementById('uploadText').textContent = '녹음 파일 선택';
+  event.target.value='';
+}
+
+// ===== Whisper STT =====
+async function runWhisper(blob, filename, pipeId, step1Id, step2Id) {
+  const key = getKey('openai');
+  const pipe = document.getElementById(pipeId);
+  const s1 = document.getElementById(step1Id);
+  const s2 = document.getElementById(step2Id);
+  pipe.classList.add('show');
+  s1.className = 'stt-step active'; s2.className = 'stt-step';
+  try {
+    // 파일 확장자 확인 & Whisper 호환 확인
+    const ext = filename.split('.').pop().toLowerCase();
+    const whisperFormats = ['mp3','mp4','mpeg','mpga','m4a','wav','webm','ogg','flac'];
+    let sendBlob = blob;
+    let sendName = filename;
+    // 지원 안 되는 확장자면 WAV로 변환
+    if (!whisperFormats.includes(ext)) {
+      console.log('Unsupported format:', ext, '→ Converting to WAV');
+      try {
+        sendBlob = await convertToWav(blob);
+        sendName = 'recording.wav';
+      } catch(e) {
+        // 변환 실패 시 원본으로 시도 (확장자만 바꿔서)
+        console.error('WAV conversion failed:', e);
+        sendName = filename.replace(/\.[^.]+$/, '.mp4');
+      }
+    }
+    const fd = new FormData();
+    fd.append('file', sendBlob, sendName);
+    fd.append('model', 'whisper-1');
+    fd.append('language', 'ko');
+    fd.append('response_format', 'text');
+    const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: {'Authorization': 'Bearer '+key},
+      body: fd
+    });
+    if (!res.ok) {
+      const e = await res.json().catch(()=>({}));
+      throw new Error('Whisper: '+(e.error?.message||res.statusText)+' (파일: '+sendName+', MIME: '+(sendBlob.type||'unknown')+')');
+    }
+    const transcript = await res.text();
+    s1.className = 'stt-step done'; s2.className = 'stt-step done';
+    // 텍스트 입력에 넣기
+    document.getElementById('inputTxt').value = transcript;
+    switchInput('text');
+    showToast('✅ 음성인식 완료! 텍스트에 자동 입력됨');
+    // PC로 녹취록 전송
+    if (peerConn && peerConn.open) {
+      peerConn.send({type:'transcript', text: transcript});
+    }
+  } catch(err) {
+    showToast('❌ '+err.message);
+    s1.className = 'stt-step'; s2.className = 'stt-step';
+  } finally {
+    document.getElementById('recBtn')?.classList.remove('processing');
+    const lbl = document.getElementById('recLabel');
+    if (lbl) lbl.textContent = '탭하여 녹음 시작';
+  }
+}
+
+// ===== PeerJS 실시간 전송 =====
+let peer = null, peerConn = null;
+
+function startHost() {
+  document.getElementById('syncJoin').style.display = 'none';
+  document.getElementById('syncHost').style.display = 'block';
+  document.getElementById('syncBtns').style.display = 'none';
+  const code = String(Math.floor(1000+Math.random()*9000));
+  document.getElementById('myCode').textContent = code;
+  if (peer) peer.destroy();
+  peer = new Peer('soap-'+code);
+  peer.on('open', () => {
+    document.getElementById('hostStatus').textContent = 'PC에서 코드 입력 대기 중...';
+    document.getElementById('hostStatus').className = 'sync-status wait';
+  });
+  peer.on('connection', c => {
+    peerConn = c;
+    document.getElementById('hostStatus').textContent = '✓ PC 연결됨!';
+    document.getElementById('hostStatus').className = 'sync-status ok';
+    document.getElementById('syncBadge').textContent = '✓ 연결됨';
+    document.getElementById('syncBadge').style.color = 'var(--green)';
+    c.on('close', () => {
+      document.getElementById('hostStatus').textContent = '연결 끊김';
+      document.getElementById('hostStatus').className = 'sync-status err';
+      document.getElementById('syncBadge').textContent = '끊김';
+      document.getElementById('syncBadge').style.color = '#ef4444';
+    });
+  });
+  peer.on('error', e => {
+    document.getElementById('hostStatus').textContent = '오류: '+e.type;
+    document.getElementById('hostStatus').className = 'sync-status err';
+  });
+}
+
+function startJoin() {
+  document.getElementById('syncHost').style.display = 'none';
+  document.getElementById('syncJoin').style.display = 'block';
+  document.getElementById('syncBtns').style.display = 'none';
+}
+
+function joinRoom() {
+  const code = document.getElementById('joinCode').value.trim();
+  if (code.length!==4) { document.getElementById('joinStatus').textContent = '4자리 코드 입력'; return; }
+  const st = document.getElementById('joinStatus');
+  st.textContent = '연결 중...'; st.className = 'sync-status wait';
+  if (peer) peer.destroy();
+  peer = new Peer();
+  peer.on('open', () => {
+    peerConn = peer.connect('soap-'+code);
+    peerConn.on('open', () => {
+      st.textContent = '✓ 태블릿 연결됨!'; st.className = 'sync-status ok';
+      document.getElementById('syncBadge').textContent = '✓ 연결됨';
+      document.getElementById('syncBadge').style.color = 'var(--green)';
+    });
+    peerConn.on('data', data => {
+      if (data.type==='transcript') {
+        // 녹취록을 입력란에 자동 채우기
+        document.getElementById('inputTxt').value = data.text;
+        // 수신 표시
+        const el = document.getElementById('recvTranscript');
+        el.textContent = data.text;
+        document.getElementById('recvTranscriptWrap').style.display = 'block';
+        st.textContent = '✓ 녹취록 수신 → 입력란에 자동 채움!';
+        showToast('📝 녹취록 수신! 입력란에 자동 입력됨');
+        // 자동 SOAP 변환 옵션
+        const autoRun = document.getElementById('autoSoapToggle');
+        if (autoRun && autoRun.checked) {
+          setTimeout(() => runAll(), 500);
+        }
+      }
+      if (data.type==='soap') {
+        const el = document.getElementById('recvSoap');
+        el.textContent = data.text;
+        document.getElementById('recvSoapWrap').style.display = 'block';
+        navigator.clipboard.writeText(data.text).catch(()=>{});
+        st.textContent = '✓ SOAP 수신 — 클립보드 자동 복사됨!';
+        showToast('📋 SOAP 수신 → 클립보드 복사됨! EMR에 Ctrl+V');
+      }
+    });
+    peerConn.on('close', () => {
+      st.textContent = '연결 끊김'; st.className = 'sync-status err';
+    });
+  });
+  peer.on('error', e => { st.textContent = '실패: '+e.type; st.className = 'sync-status err'; });
+}
+
+function copyEl(id) {
+  const t = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(t).then(() => showToast('✅ 복사 완료! EMR에 Ctrl+V'));
+}
+
+function sendTextToPC() {
+  const text = document.getElementById('inputTxt').value.trim();
+  if (!text) { showToast('⚠️ 텍스트가 비어있습니다'); return; }
+  if (!peerConn || !peerConn.open) { showToast('⚠️ PC 미연결. 💻 PC 연동에서 연결하세요'); return; }
+  peerConn.send({type:'transcript', text});
+  showToast('📡 텍스트가 PC로 전송됨!');
+}
+
+// SOAP 완료 후 이미지 섹션만 표시 (PC는 자체 SOAP 변환)
+const _origShowImageGen = showImageGen;
+showImageGen = function() {
+  _origShowImageGen();
+};
+
+init();
 </script>
-
 </body>
 </html>
