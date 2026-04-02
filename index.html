@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>구리센트럴 비누제조기 v17 | SOAP Maker</title>
+<title>구리센트럴 비누제조기 v19 | SOAP Maker</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 :root{
@@ -151,7 +151,7 @@ textarea::placeholder{color:var(--dim)}
 <body>
 <div class="wrap">
 <div class="hdr">
-  <h1>🧼 구리센트럴 <span>비누제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v17</span></h1>
+  <h1>🧼 구리센트럴 <span>비누제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v19</span></h1>
   <p class="sub">음성·텍스트·문서·영상자료 등 다양한 입력 → Multi-AI SOAP 자동 작성 · 의료 이미지 생성 · MRI/CT 분석 반영</p>
 </div>
 
@@ -516,12 +516,14 @@ function init() {
   document.querySelectorAll('.detail-opt').forEach(opt => {
     opt.addEventListener('click', e => {
       const inp = opt.querySelector('input');
+      if (!inp) return;
       if (inp.type==='radio') {
         document.querySelectorAll(`.detail-opt input[name="${inp.name}"]`).forEach(i=>i.closest('.detail-opt').classList.remove('sel'));
         opt.classList.add('sel'); inp.checked=true;
       } else if (inp.type==='checkbox') {
-        if(e.target!==inp) inp.checked=!inp.checked;
-        opt.classList.toggle('sel',inp.checked);
+        e.preventDefault();
+        inp.checked = !inp.checked;
+        opt.classList.toggle('sel', inp.checked);
       }
     });
   });
@@ -727,8 +729,16 @@ async function callAPI(provKey,modelInfo,inputText,detailLevel,langMode){
     } else {
       body.max_tokens=1500;
     }
+    // Cerebras GLM 4.7: reasoning 비활성화 (SOAP 직접 출력)
+    if(provKey==='cerebras'&&modelInfo.m.includes('glm')){
+      body.reasoning_effort='none';
+    }
     const r=await fetch(`${prov.baseUrl}/chat/completions`,{method:'POST',headers:hdrs,body:JSON.stringify(body)});
-    const d=await r.json();if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));return d.choices[0].message.content;
+    const d=await r.json();if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
+    // <think> 태그 제거 (reasoning 모델 대응)
+    let result=d.choices[0].message.content||'';
+    result=result.replace(/<think>[\s\S]*?<\/think>/g,'').trim();
+    return result;
   }
 }
 
