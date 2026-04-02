@@ -146,11 +146,11 @@ textarea::placeholder{color:var(--dim)}
 .img-model-grid{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 <div class="wrap">
 <div class="hdr">
-  <div class="badge"><div class="dot"></div>구리센트럴병원 신경외과</div>
   <h1>🧼 구리센트럴 <span>비누제조기</span></h1>
   <p class="sub">환자 녹음 → Whisper STT → Multi-AI SOAP 변환 → 의료 이미지 생성</p>
 </div>
@@ -169,10 +169,12 @@ textarea::placeholder{color:var(--dim)}
 <!-- 의사/병원 프로필 -->
 <details class="card" id="profileCard">
   <summary class="card-hdr">
-    <span class="card-title">🩺 의사 · 병원 정보</span>
+    <span class="card-title">🩺 의사 · 병원 · 약제 설정</span>
     <span style="font-size:9px;color:var(--dim)" id="profileSummary">구리센트럴병원 · NS (기본)</span>
   </summary>
   <div class="card-body">
+    <!-- 기본 정보 -->
+    <div style="font-size:10px;font-weight:600;color:var(--accent);margin-bottom:4px">👨‍⚕️ 기본 정보</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px">
       <div class="api-card"><label>🏥 근무지 (병원명)</label><input type="text" class="api-inp" id="pf-hospital" placeholder="구리센트럴병원" value="구리센트럴병원"></div>
       <div class="api-card"><label>👨‍⚕️ 소속 의사명</label><input type="text" class="api-inp" id="pf-doctor" placeholder="홍길동"></div>
@@ -181,12 +183,92 @@ textarea::placeholder{color:var(--dim)}
       <div class="api-card"><label>📅 경력 (년)</label><input type="number" class="api-inp" id="pf-years" placeholder="20" value="20" min="0" max="60"></div>
       <div class="api-card"><label>👥 주된 환자군</label><input type="text" class="api-inp" id="pf-patients" placeholder="퇴행성 척추질환, 디스크, 협착증 등"></div>
     </div>
-    <div class="api-card" style="margin-top:6px"><label>📝 특별 지시사항 (SOAP 작성 시 AI에게 전달)</label>
-      <textarea class="api-inp" id="pf-instruction" style="min-height:50px;font-family:'Noto Sans KR',sans-serif;font-size:11px;line-height:1.5;resize:vertical" placeholder="예: 수술 환자는 반드시 수술명 기재, 약물은 용량까지 포함, ICD코드 병기 등"></textarea>
+
+    <!-- 진료 철학 -->
+    <div style="font-size:10px;font-weight:600;color:var(--accent);margin:10px 0 4px">🧠 진료 철학 · 수술 원칙</div>
+    <div class="api-card"><label>의사의 진료 철학, 수술 원칙, 선호 술식 등 (Plan 작성에 반영)</label>
+      <textarea class="api-inp" id="pf-philosophy" style="min-height:60px;font-family:'Noto Sans KR',sans-serif;font-size:11px;line-height:1.6;resize:vertical" placeholder="예:
+• 척추수술은 확실한 호전을 기대할 경우에만 수술 결정
+• 내시경보다는 미세현미경 수술에 강점
+• TLIF 선호, 최소침습(MIS) 적극 활용
+• 보존적 치료 3개월 이상 시행 후 수술 고려
+• 고령 환자는 전신마취 리스크 평가 우선"></textarea>
     </div>
-    <div style="display:flex;gap:4px;margin-top:6px">
-      <button class="btn-sm" onclick="saveProfile()">💾 저장</button>
+
+    <!-- 약제/수가 정보 -->
+    <div style="font-size:10px;font-weight:600;color:var(--accent);margin:10px 0 4px">💊 약제 · 수가 · 처방 정보</div>
+    <div class="api-card"><label>보험 수가, 비급여 항목, 자주 쓰는 약제명/용량 등 (Plan 작성에 반영)</label>
+      <textarea class="api-inp" id="pf-meds" style="min-height:80px;font-family:'Noto Sans KR',sans-serif;font-size:11px;line-height:1.6;resize:vertical" placeholder="예:
+[자주 쓰는 약제]
+• 가바펜틴 300mg tid → 최대 1800mg/day
+• 프레가발린 75mg bid → 최대 300mg/day
+• 트라마돌 37.5mg/아세트아미노펜 325mg 1T bid
+• 데소겐정 (덱사메타손) 0.5mg
+
+[비급여 항목]
+• 프롤로테라피: 5만원/회
+• 도수치료: 5만원/회 (1주 2회, 4주 프로그램)
+• 체외충격파(ESWT): 3만원/회
+
+[보험 수가 참고]
+• 경막외 신경차단술 (보험): 약 5만원
+• MRI L-spine (보험적용 시): 약 15만원"></textarea>
+    </div>
+
+    <!-- 파일 업로드 -->
+    <div class="api-card" style="margin-top:4px">
+      <label>📁 약제/수가 문서 불러오기 (txt, csv, xlsx)</label>
+      <div style="display:flex;gap:4px;margin-top:3px;align-items:center">
+        <button class="btn-sm" onclick="document.getElementById('pfFile').click()" style="font-size:10px">📁 파일 선택</button>
+        <input type="file" id="pfFile" accept=".txt,.csv,.xlsx,.xls,.md,.tsv" style="display:none" onchange="handleProfileFile(event)">
+        <span style="font-size:9px;color:var(--dim)" id="pfFileStatus">파일을 선택하면 약제 정보란에 추가됩니다</span>
+      </div>
+    </div>
+
+    <!-- 외래 및 병동 구비약물 -->
+    <div style="font-size:10px;font-weight:600;color:var(--accent);margin:10px 0 4px">🏥 외래 및 병동 구비약물</div>
+    <div class="api-card"><label>현재 병원에 구비된 약물 목록 (처방 가능 약물 — Plan에서 구비약 우선 처방)</label>
+      <textarea class="api-inp" id="pf-stockmeds" style="min-height:80px;font-family:'Noto Sans KR',sans-serif;font-size:11px;line-height:1.6;resize:vertical" placeholder="예:
+[외래 구비약]
+• 타이레놀 500mg (아세트아미노펜)
+• 낙센 500mg (나프록센)
+• 뉴론틴 300mg (가바펜틴)
+• 리리카 75mg/150mg (프레가발린)
+• 트리돌 50mg (트라마돌)
+• 울트라셋 37.5/325mg (트라마돌/아세트아미노펜)
+• 메칠프레드 4mg (메틸프레드니솔론)
+
+[병동 구비약/주사]
+• 케토락 30mg IV/IM
+• 펜토시필린 400mg
+• 마이돌 50mg IM (페티딘)
+• 덱사메타손 5mg IV
+• PCA (펜타닐 기반)
+
+[외용제/물리치료]
+• 케토톱 플라스타
+• 볼타렌 겔
+• 핫팩, ICT, TENS"></textarea>
+    </div>
+    <div class="api-card" style="margin-top:4px">
+      <label>📁 구비약물 문서 불러오기 (txt, csv, xlsx)</label>
+      <div style="display:flex;gap:4px;margin-top:3px;align-items:center">
+        <button class="btn-sm" onclick="document.getElementById('pfStockFile').click()" style="font-size:10px">📁 파일 선택</button>
+        <input type="file" id="pfStockFile" accept=".txt,.csv,.xlsx,.xls,.md,.tsv" style="display:none" onchange="handleStockMedFile(event)">
+        <span style="font-size:9px;color:var(--dim)" id="pfStockFileStatus">파일 → 구비약물란에 추가</span>
+      </div>
+    </div>
+
+    <!-- 특별 지시사항 -->
+    <div style="font-size:10px;font-weight:600;color:var(--accent);margin:10px 0 4px">📝 특별 지시사항</div>
+    <div class="api-card"><label>SOAP 작성 시 AI에게 전달할 추가 지시</label>
+      <textarea class="api-inp" id="pf-instruction" style="min-height:50px;font-family:'Noto Sans KR',sans-serif;font-size:11px;line-height:1.5;resize:vertical" placeholder="예: 수술 환자는 반드시 수술명 기재, 약물은 용량까지 포함, ICD코드 병기, Plan에 비급여 항목 포함 시 예상 비용 안내 등"></textarea>
+    </div>
+
+    <div style="display:flex;gap:4px;margin-top:8px">
+      <button class="btn-sm" onclick="saveProfile()">💾 전체 저장</button>
       <button class="btn-sm" onclick="resetProfile()">🔄 초기화</button>
+      <span style="font-size:9px;color:var(--dim);margin-left:auto;align-self:center">브라우저에 저장 · 한 번만 설정하면 됨</span>
     </div>
   </div>
 </details>
@@ -215,9 +297,9 @@ textarea::placeholder{color:var(--dim)}
   <div class="card-body">
     <div class="img-model-grid">
       <label class="detail-opt sel"><input type="checkbox" name="imgEng" value="nanobana2" checked> 🍌 NanoBanana2</label>
-      <label class="detail-opt"><input type="checkbox" name="imgEng" value="gpt"> 🤖 GPT Image</label>
-      <label class="detail-opt"><input type="checkbox" name="imgEng" value="grok"> ⚡ Grok</label>
-      <label class="detail-opt"><input type="checkbox" name="imgEng" value="nai"> 🎨 NovelAI</label>
+      <label class="detail-opt sel"><input type="checkbox" name="imgEng" value="gpt" checked> 🤖 GPT Image</label>
+      <label class="detail-opt sel"><input type="checkbox" name="imgEng" value="grok" checked> ⚡ Grok</label>
+      <label class="detail-opt sel"><input type="checkbox" name="imgEng" value="nai" checked> 🎨 NovelAI</label>
     </div>
     <div style="font-size:9px;color:var(--dim)">기본: NanoBanana2 (16:9 가로형) · SOAP 변환 후 자동 생성</div>
   </div>
@@ -420,7 +502,7 @@ function init() {
 function renderApiKeys() {
   document.getElementById('apiWrap').innerHTML = API_KEYS_CONFIG.map(c=>`
     <div class="api-card"><label>${c.label}</label><div class="api-row">
-      <input type="password" class="api-inp" id="key_${c.id}" placeholder="${c.placeholder}" oninput="saveKey('${c.id}',this.value)">
+      <input type="text" class="api-inp" id="key_${c.id}" placeholder="${c.placeholder}" oninput="saveKey('${c.id}',this.value)" style="font-size:9px">
       <span class="api-st no" id="st_${c.id}">미입력</span>
     </div></div>`).join('');
   API_KEYS_CONFIG.forEach(c=>{
@@ -455,12 +537,12 @@ function loadExample(){
 }
 
 // ===== PROFILE =====
-const PF_FIELDS=['pf-hospital','pf-doctor','pf-dept','pf-specialty','pf-years','pf-patients','pf-instruction'];
+const PF_FIELDS=['pf-hospital','pf-doctor','pf-dept','pf-specialty','pf-years','pf-patients','pf-philosophy','pf-meds','pf-stockmeds','pf-instruction'];
 
 function saveProfile(){
   const data={};PF_FIELDS.forEach(id=>{data[id]=document.getElementById(id)?.value||'';});
   localStorage.setItem('soap_profile',JSON.stringify(data));
-  updateProfileSummary();showToast('💾 프로필 저장됨');
+  updateProfileSummary();showToast('💾 프로필 전체 저장됨');
 }
 
 function loadProfile(){
@@ -470,7 +552,7 @@ function loadProfile(){
 }
 
 function resetProfile(){
-  const defaults={'pf-hospital':'구리센트럴병원','pf-doctor':'','pf-dept':'신경외과','pf-specialty':'Spine Surgery','pf-years':'20','pf-patients':'','pf-instruction':''};
+  const defaults={'pf-hospital':'구리센트럴병원','pf-doctor':'','pf-dept':'신경외과','pf-specialty':'Spine Surgery','pf-years':'20','pf-patients':'','pf-philosophy':'','pf-meds':'','pf-stockmeds':'','pf-instruction':''};
   PF_FIELDS.forEach(id=>{const el=document.getElementById(id);if(el)el.value=defaults[id]||'';});
   localStorage.removeItem('soap_profile');updateProfileSummary();showToast('🔄 초기화됨');
 }
@@ -480,7 +562,11 @@ function updateProfileSummary(){
   const d=document.getElementById('pf-dept')?.value?.trim()||'NS';
   const s=document.getElementById('pf-specialty')?.value?.trim()||'';
   const dr=document.getElementById('pf-doctor')?.value?.trim()||'';
+  const hasMeds=document.getElementById('pf-meds')?.value?.trim()?'💊':'';
+  const hasPhil=document.getElementById('pf-philosophy')?.value?.trim()?'🧠':'';
+  const hasStock=document.getElementById('pf-stockmeds')?.value?.trim()?'🏥':'';
   let sum=`${h} · ${d}`;if(s)sum+=` · ${s}`;if(dr)sum+=` · ${dr}`;
+  if(hasMeds||hasPhil||hasStock)sum+=` ${hasPhil}${hasMeds}${hasStock}`;
   document.getElementById('profileSummary').textContent=sum;
 }
 
@@ -491,13 +577,75 @@ function getProfileContext(){
   const spec=document.getElementById('pf-specialty')?.value?.trim()||'';
   const yrs=document.getElementById('pf-years')?.value?.trim()||'';
   const pts=document.getElementById('pf-patients')?.value?.trim()||'';
+  const phil=document.getElementById('pf-philosophy')?.value?.trim()||'';
+  const meds=document.getElementById('pf-meds')?.value?.trim()||'';
   const inst=document.getElementById('pf-instruction')?.value?.trim()||'';
   let ctx='';
   if(h)ctx+=`병원: ${h}. `;if(dr)ctx+=`의사: ${dr}. `;
   if(dept)ctx+=`진료과: ${dept}. `;if(spec)ctx+=`전공: ${spec}. `;
   if(yrs)ctx+=`경력: ${yrs}년. `;if(pts)ctx+=`주요 환자군: ${pts}. `;
-  if(inst)ctx+=`\n\n특별 지시사항: ${inst}`;
+  if(phil)ctx+=`\n\n[진료 철학 및 수술 원칙]\n${phil}`;
+  if(meds)ctx+=`\n\n[약제/수가/처방 정보 — Plan 작성 시 이 정보를 참고하여 구체적 약제명, 용량, 비급여 항목 및 예상 비용을 포함하세요]\n${meds}`;
+  const stockmeds=document.getElementById('pf-stockmeds')?.value?.trim()||'';
+  if(stockmeds)ctx+=`\n\n[외래/병동 구비약물 — Plan에서 처방 시 이 구비약물을 우선 사용하세요. 구비되지 않은 약은 원외처방으로 구분하세요]\n${stockmeds}`;
+  if(inst)ctx+=`\n\n[특별 지시사항]\n${inst}`;
   return ctx;
+}
+
+// 구비약물 파일 업로드
+async function handleStockMedFile(e){
+  const file=e.target.files[0];if(!file)return;
+  const st=document.getElementById('pfStockFileStatus');
+  st.textContent='읽는 중...';st.style.color='var(--accent)';
+  try{
+    let text='';
+    const ext=file.name.split('.').pop().toLowerCase();
+    if(ext==='xlsx'||ext==='xls'){
+      const buf=await file.arrayBuffer();
+      const wb=XLSX.read(buf,{type:'array'});
+      wb.SheetNames.forEach(name=>{text+=`[${name}]\n`;text+=XLSX.utils.sheet_to_csv(wb.Sheets[name],{FS:'\t'})+'\n\n';});
+    } else { text=await file.text(); }
+    if(!text.trim()){st.textContent='⚠️ 파일 내용 없음';st.style.color='#f59e0b';return;}
+    const el=document.getElementById('pf-stockmeds');
+    const existing=el.value.trim();
+    el.value=(existing?existing+'\n\n':'')+'['+file.name+']\n'+text.trim();
+    st.textContent='✅ '+file.name+' 추가됨';st.style.color='var(--green)';
+    showToast('✅ 구비약물 정보 추가됨');
+  }catch(err){st.textContent='❌ '+err.message;st.style.color='#ef4444';}
+  finally{e.target.value='';}
+}
+
+// 약제/수가 파일 업로드
+async function handleProfileFile(e){
+  const file=e.target.files[0];if(!file)return;
+  const st=document.getElementById('pfFileStatus');
+  st.textContent='읽는 중...';st.style.color='var(--accent)';
+  try{
+    let text='';
+    const ext=file.name.split('.').pop().toLowerCase();
+    if(ext==='xlsx'||ext==='xls'){
+      // Excel → 텍스트 변환
+      const buf=await file.arrayBuffer();
+      const wb=XLSX.read(buf,{type:'array'});
+      wb.SheetNames.forEach(name=>{
+        text+=`[시트: ${name}]\n`;
+        const ws=wb.Sheets[name];
+        text+=XLSX.utils.sheet_to_csv(ws,{FS:'\t'})+'\n\n';
+      });
+    } else {
+      text=await file.text();
+    }
+    if(!text.trim()){st.textContent='⚠️ 파일 내용 없음';st.style.color='#f59e0b';return;}
+    // 기존 약제 정보에 추가
+    const el=document.getElementById('pf-meds');
+    const existing=el.value.trim();
+    el.value=(existing?existing+'\n\n':'')+'['+file.name+'에서 불러옴]\n'+text.trim();
+    st.textContent='✅ '+file.name+' 로드 완료 (약제 정보란에 추가됨)';
+    st.style.color='var(--green)';
+    showToast('✅ '+file.name+' → 약제 정보에 추가됨');
+  }catch(err){
+    st.textContent='❌ 읽기 실패: '+err.message;st.style.color='#ef4444';
+  }finally{e.target.value='';}
 }
 
 // ===== API CALL =====
