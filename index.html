@@ -1618,6 +1618,54 @@ async function runWhisper(blob, filename, pipeId, step1Id, step2Id) {
 // ===== PeerJS 실시간 전송 =====
 let peer = null, peerConn = null;
 
+function handlePeerData(data) {
+  if (data.type==='transcript') {
+    document.getElementById('inputTxt').value = data.text;
+    const el = document.getElementById('recvTranscript');
+    el.textContent = data.text;
+    document.getElementById('recvTranscriptWrap').style.display = 'block';
+    showToast('📝 녹취록 수신! 입력란에 자동 입력됨');
+    const autoRun = document.getElementById('autoSoapToggle');
+    if (autoRun && autoRun.checked) {
+      setTimeout(() => runAll(), 500);
+    }
+  }
+  if (data.type==='soap') {
+    const el = document.getElementById('recvSoap');
+    el.textContent = data.text;
+    document.getElementById('recvSoapWrap').style.display = 'block';
+    navigator.clipboard.writeText(data.text).catch(()=>{});
+    showToast('📋 SOAP 수신 → 클립보드 복사됨! EMR에 Ctrl+V');
+  }
+  if (data.type==='ping') {
+    if (peerConn && peerConn.open) peerConn.send({type:'pong'});
+  }
+}
+
+function setupConn(c, statusEl, isHost) {
+  peerConn = c;
+  function onConnected() {
+    if (statusEl) { statusEl.textContent = '✓ 연결됨!'; statusEl.className = 'sync-status ok'; }
+    document.getElementById('syncBadge').textContent = '✓ 연결됨';
+    document.getElementById('syncBadge').style.color = 'var(--green)';
+  }
+  if (isHost) {
+    // Host: connection is already open when 'connection' event fires
+    onConnected();
+  } else {
+    c.on('open', onConnected);
+  }
+  c.on('data', handlePeerData);
+  c.on('close', () => {
+    if (statusEl) { statusEl.textContent = '연결 끊김'; statusEl.className = 'sync-status err'; }
+    document.getElementById('syncBadge').textContent = '끊김';
+    document.getElementById('syncBadge').style.color = '#ef4444';
+  });
+  c.on('error', e => {
+    if (statusEl) { statusEl.textContent = '오류: '+e.type; statusEl.className = 'sync-status err'; }
+  });
+}
+
 function startHost() {
   document.getElementById('syncJoin').style.display = 'none';
   document.getElementById('syncHost').style.display = 'block';
@@ -1625,26 +1673,16 @@ function startHost() {
   const code = String(Math.floor(1000+Math.random()*9000));
   document.getElementById('myCode').textContent = code;
   if (peer) peer.destroy();
-  peer = new Peer('soap-'+code);
+  peer = new Peer('soap-'+code, {debug: 0});
   peer.on('open', () => {
-    document.getElementById('hostStatus').textContent = 'PC에서 코드 입력 대기 중...';
+    document.getElementById('hostStatus').textContent = '코드: '+code+' — 상대방이 입력 대기 중...';
     document.getElementById('hostStatus').className = 'sync-status wait';
   });
   peer.on('connection', c => {
-    peerConn = c;
-    document.getElementById('hostStatus').textContent = '✓ PC 연결됨!';
-    document.getElementById('hostStatus').className = 'sync-status ok';
-    document.getElementById('syncBadge').textContent = '✓ 연결됨';
-    document.getElementById('syncBadge').style.color = 'var(--green)';
-    c.on('close', () => {
-      document.getElementById('hostStatus').textContent = '연결 끊김';
-      document.getElementById('hostStatus').className = 'sync-status err';
-      document.getElementById('syncBadge').textContent = '끊김';
-      document.getElementById('syncBadge').style.color = '#ef4444';
-    });
+    setupConn(c, document.getElementById('hostStatus'), true);
   });
   peer.on('error', e => {
-    document.getElementById('hostStatus').textContent = '오류: '+e.type;
+    document.getElementById('hostStatus').textContent = '오류: '+e.type+' — 페이지 새로고침 후 재시도';
     document.getElementById('hostStatus').className = 'sync-status err';
   });
 }
@@ -1661,44 +1699,15 @@ function joinRoom() {
   const st = document.getElementById('joinStatus');
   st.textContent = '연결 중...'; st.className = 'sync-status wait';
   if (peer) peer.destroy();
-  peer = new Peer();
+  peer = new Peer(undefined, {debug: 0});
   peer.on('open', () => {
-    peerConn = peer.connect('soap-'+code);
-    peerConn.on('open', () => {
-      st.textContent = '✓ 태블릿 연결됨!'; st.className = 'sync-status ok';
-      document.getElementById('syncBadge').textContent = '✓ 연결됨';
-      document.getElementById('syncBadge').style.color = 'var(--green)';
-    });
-    peerConn.on('data', data => {
-      if (data.type==='transcript') {
-        // 녹취록을 입력란에 자동 채우기
-        document.getElementById('inputTxt').value = data.text;
-        // 수신 표시
-        const el = document.getElementById('recvTranscript');
-        el.textContent = data.text;
-        document.getElementById('recvTranscriptWrap').style.display = 'block';
-        st.textContent = '✓ 녹취록 수신 → 입력란에 자동 채움!';
-        showToast('📝 녹취록 수신! 입력란에 자동 입력됨');
-        // 자동 SOAP 변환 옵션
-        const autoRun = document.getElementById('autoSoapToggle');
-        if (autoRun && autoRun.checked) {
-          setTimeout(() => runAll(), 500);
-        }
-      }
-      if (data.type==='soap') {
-        const el = document.getElementById('recvSoap');
-        el.textContent = data.text;
-        document.getElementById('recvSoapWrap').style.display = 'block';
-        navigator.clipboard.writeText(data.text).catch(()=>{});
-        st.textContent = '✓ SOAP 수신 — 클립보드 자동 복사됨!';
-        showToast('📋 SOAP 수신 → 클립보드 복사됨! EMR에 Ctrl+V');
-      }
-    });
-    peerConn.on('close', () => {
-      st.textContent = '연결 끊김'; st.className = 'sync-status err';
-    });
+    const c = peer.connect('soap-'+code, {reliable: true});
+    setupConn(c, st, false);
   });
-  peer.on('error', e => { st.textContent = '실패: '+e.type; st.className = 'sync-status err'; });
+  peer.on('error', e => {
+    st.textContent = '실패: '+e.type+' — 코드 확인 후 재시도';
+    st.className = 'sync-status err';
+  });
 }
 
 function copyEl(id) {
