@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>구리센트럴 비누제조기 | SOAP Maker</title>
+<title>구리센트럴 비누제조기 v17 | SOAP Maker</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 :root{
@@ -151,12 +151,12 @@ textarea::placeholder{color:var(--dim)}
 <body>
 <div class="wrap">
 <div class="hdr">
-  <h1>🧼 구리센트럴 <span>비누제조기</span></h1>
+  <h1>🧼 구리센트럴 <span>비누제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v17</span></h1>
   <p class="sub">음성·텍스트·문서·영상자료 등 다양한 입력 → Multi-AI SOAP 자동 작성 · 의료 이미지 생성 · MRI/CT 분석 반영</p>
 </div>
 
 <!-- API 키 -->
-<details class="card">
+<details class="card" open>
   <summary class="card-hdr">
     <span class="card-title">🔑 1단계: API 키 입력</span>
     <span style="font-size:9px;color:var(--dim)">처음 1회만 입력 · 자동 저장됨</span>
@@ -174,7 +174,7 @@ textarea::placeholder{color:var(--dim)}
 </details>
 
 <!-- 의사/병원 프로필 -->
-<details class="card" id="profileCard">
+<details class="card" id="profileCard" open>
   <summary class="card-hdr">
     <span class="card-title">🩺 2단계: 병원 · 의사 · 약제 정보</span>
     <span style="font-size:9px;color:var(--dim)" id="profileSummary">구리센트럴병원 · NS (기본)</span>
@@ -995,5 +995,4 @@ async function runWhisper(blob,filename,pipeId,s1Id,s2Id){
     const ok=['mp3','mp4','mpeg','mpga','m4a','wav','webm','ogg','flac'];
     let sendBlob=blob,sendName=filename;
     if(!ok.includes(ext)){try{sendBlob=await convertToWav(blob);sendName='recording.wav';}catch(e){sendName=filename.replace(/\.[^.]+$/,'.mp4');}}
-    const fd=new FormData();fd.append('file',sendBlob,sendName);fd.append('model','whisper-1');fd.append('language','ko');fd.append('response_format','text');
-    const r=await fetch('https://api.openai.
+    const fd=new FormData();fd.append('file',sendBlob,sendName);fd.append('model','whisper-1');fd.append('language',
