@@ -995,4 +995,34 @@ async function runWhisper(blob,filename,pipeId,s1Id,s2Id){
     const ok=['mp3','mp4','mpeg','mpga','m4a','wav','webm','ogg','flac'];
     let sendBlob=blob,sendName=filename;
     if(!ok.includes(ext)){try{sendBlob=await convertToWav(blob);sendName='recording.wav';}catch(e){sendName=filename.replace(/\.[^.]+$/,'.mp4');}}
-    const fd=new FormData();fd.append('file',sendBlob,sendName);fd.append('model','whisper-1');fd.append('language',
+    const fd=new FormData();fd.append('file',sendBlob,sendName);fd.append('model','whisper-1');fd.append('language','ko');fd.append('response_format','text');
+    const r=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd});
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error('Whisper: '+(e.error?.message||r.statusText));}
+    const transcript=await r.text();s1.className='stt-step done';s2.className='stt-step done';
+    document.getElementById('inputTxt').value=transcript;switchInput('text');
+    navigator.clipboard.writeText(transcript).catch(()=>{});
+    showToast('✅ 음성인식 완료!');
+  }catch(err){showToast('❌ '+err.message);s1.className='stt-step';s2.className='stt-step';}
+  finally{document.getElementById('recBtn')?.classList.remove('processing');document.getElementById('recLabel').textContent='탭하여 녹음 시작';}
+}
+
+async function convertToWav(blob){
+  const ctx=new(window.AudioContext||window.webkitAudioContext)({sampleRate:16000});
+  const buf=await ctx.decodeAudioData(await blob.arrayBuffer());
+  const samples=buf.getChannelData(0),wavBuf=new ArrayBuffer(44+samples.length*2),v=new DataView(wavBuf);
+  function ws(o,s){for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));}
+  ws(0,'RIFF');v.setUint32(4,36+samples.length*2,true);ws(8,'WAVE');ws(12,'fmt ');
+  v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,16000,true);
+  v.setUint32(28,32000,true);v.setUint16(32,2,true);v.setUint16(34,16,true);ws(36,'data');
+  v.setUint32(40,samples.length*2,true);
+  for(let i=0;i<samples.length;i++){const s=Math.max(-1,Math.min(1,samples[i]));v.setInt16(44+i*2,s<0?s*0x8000:s*0x7FFF,true);}
+  ctx.close();return new Blob([wavBuf],{type:'audio/wav'});
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+document.addEventListener('keydown',e=>{if(e.ctrlKey&&e.key==='Enter')runAll();});
+
+init();
+</script>
+</body>
+</html>
