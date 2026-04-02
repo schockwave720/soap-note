@@ -446,25 +446,57 @@ Ctrl+Enter → 변환 시작"></textarea>
     <!-- PC 연동 -->
     <div class="sync-card">
       <div class="card-hdr">
-        <span class="card-title">💻 Galaxy Tab ↔ PC 실시간 전송</span>
+        <span class="card-title">💻 Galaxy Tab ↔ PC 연동</span>
         <span style="font-size:10px;color:var(--dim)" id="syncBadge">미연결</span>
       </div>
       <div class="sync-body">
-        <div class="sync-desc">
-          <b>📱 태블릿:</b> 녹음 → Whisper 텍스트 변환 → PC로 전송<br>
-          <b>💻 PC:</b> 텍스트 자동 수신 → Multi-AI SOAP 변환 → EMR 복사<br>
-          <span style="font-size:10px">클로바노트 붙여넣기도 PC에서 직접 가능</span>
+        <!-- 연동 방법 탭 -->
+        <div style="display:flex;gap:0;margin-bottom:12px;border-radius:6px;overflow:hidden;border:1px solid var(--border)">
+          <button class="input-tab active" onclick="switchSync('flow')" id="syncTab-flow">📱 Samsung Flow (추천)</button>
+          <button class="input-tab" onclick="switchSync('peer')" id="syncTab-peer">🔗 PeerJS 코드</button>
         </div>
-        <div id="syncHost" style="display:none">
-          <div style="font-size:10px;color:var(--dim)">내 연결 코드 (PC에서 입력)</div>
-          <div class="sync-code" id="myCode">----</div>
-          <div class="sync-status wait" id="hostStatus">대기 중...</div>
+
+        <!-- Samsung Flow 방식 -->
+        <div id="syncPane-flow">
+          <div style="background:var(--surface2);border-radius:8px;padding:14px;text-align:left;font-size:11px;line-height:1.8">
+            <div style="font-weight:700;color:var(--accent);margin-bottom:6px;font-size:12px">Samsung Flow 연동 (가장 안정적)</div>
+            <b>사전 설치:</b> Galaxy Tab + PC 둘 다 Samsung Flow 앱 설치 후 페어링<br><br>
+            <b>사용법:</b><br>
+            1. 📱 <b>갤럭시 탭</b>에서 녹음 → Whisper 변환 → <span style="color:var(--green)">클립보드 자동 복사됨</span><br>
+            2. Samsung Flow가 클립보드를 PC로 자동 동기화<br>
+            3. 💻 <b>PC</b>에서 아래 입력란에 <b>Ctrl+V</b> 붙여넣기<br>
+            4. AI 모델 선택 → SOAP 변환<br><br>
+            <span style="color:var(--dim)">클로바노트도 동일: 텍스트 복사 → Flow가 PC 클립보드에 자동 전달</span>
+          </div>
+          <div style="margin-top:10px;text-align:center">
+            <button class="btn-sm" onclick="pasteFromClipboard()" style="padding:8px 20px;font-size:12px;color:var(--accent);border-color:var(--accent)">
+              📋 클립보드에서 붙여넣기 → 입력란에 채우기
+            </button>
+          </div>
         </div>
-        <div id="syncJoin" style="display:none">
-          <div style="font-size:10px;color:var(--dim);margin-bottom:6px">태블릿의 연결 코드 입력</div>
-          <input class="sync-join-input" id="joinCode" maxlength="4" placeholder="코드" inputmode="numeric">
-          <button class="btn-sm" onclick="joinRoom()" style="margin-top:6px;padding:7px 18px">연결</button>
-          <div class="sync-status" id="joinStatus"></div>
+
+        <!-- PeerJS 방식 -->
+        <div id="syncPane-peer" style="display:none">
+          <div class="sync-desc">
+            <b>📱 태블릿:</b> 녹음 → Whisper 텍스트 변환 → PC로 전송<br>
+            <b>💻 PC:</b> 텍스트 자동 수신 → Multi-AI SOAP 변환 → EMR 복사<br>
+            <span style="font-size:10px;color:var(--dim)">PeerJS 서버 상태에 따라 연결이 불안정할 수 있음</span>
+          </div>
+          <div id="syncHost" style="display:none">
+            <div style="font-size:10px;color:var(--dim)">내 연결 코드 (PC에서 입력)</div>
+            <div class="sync-code" id="myCode">----</div>
+            <div class="sync-status wait" id="hostStatus">대기 중...</div>
+          </div>
+          <div id="syncJoin" style="display:none">
+            <div style="font-size:10px;color:var(--dim);margin-bottom:6px">태블릿의 연결 코드 입력</div>
+            <input class="sync-join-input" id="joinCode" maxlength="4" placeholder="코드" inputmode="numeric">
+            <button class="btn-sm" onclick="joinRoom()" style="margin-top:6px;padding:7px 18px">연결</button>
+            <div class="sync-status" id="joinStatus"></div>
+          </div>
+          <div class="sync-mode-btns" id="syncBtns">
+            <button class="btn-sm" onclick="startHost()">📱 태블릿 (전송)</button>
+            <button class="btn-sm" onclick="startJoin()">💻 PC (수신)</button>
+          </div>
         </div>
 
         <!-- PC 수신 영역: 녹취록 -->
@@ -485,10 +517,6 @@ Ctrl+Enter → 변환 시작"></textarea>
           <div class="sync-received show" id="recvSoap" style="display:block;max-height:400px"></div>
         </div>
 
-        <div class="sync-mode-btns" id="syncBtns">
-          <button class="btn-sm" onclick="startHost()">📱 태블릿 (전송)</button>
-          <button class="btn-sm" onclick="startJoin()">💻 PC (수신)</button>
-        </div>
         <div style="margin-top:10px;display:flex;align-items:center;justify-content:center;gap:6px">
           <label style="font-size:10px;color:var(--dim);display:flex;align-items:center;gap:4px;cursor:pointer">
             <input type="checkbox" id="autoSoapToggle" checked style="accent-color:var(--green)">
@@ -1600,8 +1628,13 @@ async function runWhisper(blob, filename, pipeId, step1Id, step2Id) {
     // 텍스트 입력에 넣기
     document.getElementById('inputTxt').value = transcript;
     switchInput('text');
-    showToast('✅ 음성인식 완료! 텍스트에 자동 입력됨');
-    // PC로 녹취록 전송
+    // 클립보드 자동 복사 (Samsung Flow 연동)
+    navigator.clipboard.writeText(transcript).then(() => {
+      showToast('✅ 음성인식 완료! 클립보드 복사됨 → Samsung Flow로 PC 자동 전달');
+    }).catch(() => {
+      showToast('✅ 음성인식 완료! 텍스트에 자동 입력됨');
+    });
+    // PeerJS 연결 있으면 전송도 시도
     if (peerConn && peerConn.open) {
       peerConn.send({type:'transcript', text: transcript});
     }
@@ -1748,6 +1781,31 @@ function sendTextToPC() {
   if (!peerConn || !peerConn.open) { showToast('⚠️ PC 미연결. 💻 PC 연동에서 연결하세요'); return; }
   peerConn.send({type:'transcript', text});
   showToast('📡 텍스트가 PC로 전송됨!');
+}
+
+// ===== Samsung Flow / Sync 탭 전환 =====
+function switchSync(mode) {
+  document.getElementById('syncTab-flow').classList.toggle('active', mode==='flow');
+  document.getElementById('syncTab-peer').classList.toggle('active', mode==='peer');
+  document.getElementById('syncPane-flow').style.display = mode==='flow'?'block':'none';
+  document.getElementById('syncPane-peer').style.display = mode==='peer'?'block':'none';
+}
+
+// 클립보드에서 붙여넣기 (Samsung Flow 연동용)
+async function pasteFromClipboard() {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (!text || !text.trim()) { showToast('⚠️ 클립보드가 비어있습니다'); return; }
+    document.getElementById('inputTxt').value = text;
+    showToast('✅ 클립보드 내용을 입력란에 붙여넣었습니다!');
+    // 자동 SOAP 변환
+    const autoRun = document.getElementById('autoSoapToggle');
+    if (autoRun && autoRun.checked) {
+      setTimeout(() => runAll(), 500);
+    }
+  } catch(e) {
+    showToast('⚠️ 클립보드 접근 실패 — 입력란에 직접 Ctrl+V 해주세요');
+  }
 }
 
 // SOAP 완료 후 이미지 섹션만 표시 (PC는 자체 SOAP 변환)
