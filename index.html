@@ -1642,27 +1642,24 @@ function handlePeerData(data) {
   }
 }
 
-function setupConn(c, statusEl, isHost) {
+function setupConn(c, statusEl) {
   peerConn = c;
   function onConnected() {
     if (statusEl) { statusEl.textContent = '✓ 연결됨!'; statusEl.className = 'sync-status ok'; }
     document.getElementById('syncBadge').textContent = '✓ 연결됨';
     document.getElementById('syncBadge').style.color = 'var(--green)';
   }
-  if (isHost) {
-    // Host: connection is already open when 'connection' event fires
-    onConnected();
-  } else {
-    c.on('open', onConnected);
-  }
+  // 이미 열려있으면 바로 처리 (race condition 방지)
+  if (c.open) onConnected();
+  c.on('open', onConnected);
   c.on('data', handlePeerData);
   c.on('close', () => {
-    if (statusEl) { statusEl.textContent = '연결 끊김'; statusEl.className = 'sync-status err'; }
+    if (statusEl) { statusEl.textContent = '연결 끊김 — 새로고침 후 재연결'; statusEl.className = 'sync-status err'; }
     document.getElementById('syncBadge').textContent = '끊김';
     document.getElementById('syncBadge').style.color = '#ef4444';
   });
   c.on('error', e => {
-    if (statusEl) { statusEl.textContent = '오류: '+e.type; statusEl.className = 'sync-status err'; }
+    if (statusEl) { statusEl.textContent = '오류: '+(e.type||e.message); statusEl.className = 'sync-status err'; }
   });
 }
 
@@ -1672,14 +1669,14 @@ function startHost() {
   document.getElementById('syncBtns').style.display = 'none';
   const code = String(Math.floor(1000+Math.random()*9000));
   document.getElementById('myCode').textContent = code;
-  if (peer) peer.destroy();
+  if (peer) { try{peer.destroy()}catch(e){} }
   peer = new Peer('soap-'+code, {debug: 0});
   peer.on('open', () => {
     document.getElementById('hostStatus').textContent = '코드: '+code+' — 상대방이 입력 대기 중...';
     document.getElementById('hostStatus').className = 'sync-status wait';
   });
   peer.on('connection', c => {
-    setupConn(c, document.getElementById('hostStatus'), true);
+    setupConn(c, document.getElementById('hostStatus'));
   });
   peer.on('error', e => {
     document.getElementById('hostStatus').textContent = '오류: '+e.type+' — 페이지 새로고침 후 재시도';
@@ -1698,14 +1695,26 @@ function joinRoom() {
   if (code.length!==4) { document.getElementById('joinStatus').textContent = '4자리 코드 입력'; return; }
   const st = document.getElementById('joinStatus');
   st.textContent = '연결 중...'; st.className = 'sync-status wait';
-  if (peer) peer.destroy();
+  if (peer) { try{peer.destroy()}catch(e){} }
   peer = new Peer(undefined, {debug: 0});
   peer.on('open', () => {
-    const c = peer.connect('soap-'+code, {reliable: true});
-    setupConn(c, st, false);
+    st.textContent = '서버 연결됨 — 상대방 찾는 중...';
+    const c = peer.connect('soap-'+code, {reliable: true, serialization: 'json'});
+    setupConn(c, st);
+    // 10초 타임아웃
+    setTimeout(() => {
+      if (!c.open) {
+        st.textContent = '시간 초과 — 양쪽 새로고침 후 재시도';
+        st.className = 'sync-status err';
+      }
+    }, 10000);
   });
   peer.on('error', e => {
-    st.textContent = '실패: '+e.type+' — 코드 확인 후 재시도';
+    if (e.type === 'peer-unavailable') {
+      st.textContent = '코드 '+code+' 없음 — 상대방이 먼저 버튼 눌러야 함';
+    } else {
+      st.textContent = '실패: '+e.type+' — 새로고침 후 재시도';
+    }
     st.className = 'sync-status err';
   });
 }
