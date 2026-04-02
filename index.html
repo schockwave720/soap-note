@@ -152,16 +152,23 @@ textarea::placeholder{color:var(--dim)}
 <div class="wrap">
 <div class="hdr">
   <h1>🧼 구리센트럴 <span>비누제조기</span></h1>
-  <p class="sub">환자 녹음 → Whisper STT → Multi-AI SOAP 변환 → 의료 이미지 생성</p>
+  <p class="sub">음성·텍스트·문서·영상자료 등 다양한 입력 → Multi-AI SOAP 자동 작성 · 의료 이미지 생성 · MRI/CT 분석 반영</p>
 </div>
 
 <!-- API 키 -->
 <details class="card">
   <summary class="card-hdr">
-    <span class="card-title">🔑 API 키 설정</span>
-    <span style="font-size:9px;color:var(--dim)">클릭하여 편집 · 브라우저 저장</span>
+    <span class="card-title">🔑 1단계: API 키 입력</span>
+    <span style="font-size:9px;color:var(--dim)">처음 1회만 입력 · 자동 저장됨</span>
   </summary>
   <div class="card-body">
+    <div style="background:rgba(0,180,216,.06);border:1px solid rgba(0,180,216,.15);border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:11px;line-height:1.8;color:var(--text)">
+      💡 <b>API 키란?</b> AI 서비스를 사용하기 위한 비밀번호예요.<br>
+      각 AI 회사 홈페이지에서 무료/유료 키를 발급받아 아래에 입력하세요.<br>
+      <span style="color:var(--green)">✓ 한 번 입력하면 브라우저에 저장되어 매번 입력할 필요 없어요.</span><br>
+      <span style="color:var(--dim)">• 음성인식(녹음)을 사용하려면 <b>OpenAI 키</b>가 반드시 필요합니다.</span><br>
+      <span style="color:var(--dim)">• 나머지는 사용할 AI만 입력하면 됩니다. 전부 입력할 필요 없어요.</span>
+    </div>
     <div class="api-wrap" id="apiWrap"></div>
   </div>
 </details>
@@ -169,10 +176,16 @@ textarea::placeholder{color:var(--dim)}
 <!-- 의사/병원 프로필 -->
 <details class="card" id="profileCard">
   <summary class="card-hdr">
-    <span class="card-title">🩺 의사 · 병원 · 약제 설정</span>
+    <span class="card-title">🩺 2단계: 병원 · 의사 · 약제 정보</span>
     <span style="font-size:9px;color:var(--dim)" id="profileSummary">구리센트럴병원 · NS (기본)</span>
   </summary>
   <div class="card-body">
+    <div style="background:rgba(6,214,160,.06);border:1px solid rgba(6,214,160,.15);border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:11px;line-height:1.8;color:var(--text)">
+      💡 <b>여기에 입력한 정보가 SOAP 작성에 반영됩니다.</b><br>
+      병원명, 전공, 자주 쓰는 약, 진료 원칙 등을 입력해두면<br>
+      AI가 선생님의 진료 스타일에 맞춰 SOAP을 작성해줘요.<br>
+      <span style="color:var(--green)">✓ 처음 한 번만 설정하면 자동 저장됩니다. 💾 저장 버튼을 눌러주세요.</span>
+    </div>
     <!-- 기본 정보 -->
     <div style="font-size:10px;font-weight:600;color:var(--accent);margin-bottom:4px">👨‍⚕️ 기본 정보</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px">
@@ -278,8 +291,9 @@ textarea::placeholder{color:var(--dim)}
 
 <!-- AI 모델 선택 -->
 <div class="card">
-  <div class="card-hdr"><span class="card-title">🤖 AI 모델 선택</span><span class="btn-sm" onclick="loadExample()">예시</span></div>
+  <div class="card-hdr"><span class="card-title">🤖 3단계: SOAP 작성할 AI 선택</span><span class="btn-sm" onclick="loadExample()">예시</span></div>
   <div class="card-body">
+    <div style="font-size:10px;color:var(--dim);margin-bottom:6px;line-height:1.6">사용할 AI를 체크하세요. 여러 개 선택하면 동시에 SOAP을 작성해서 비교할 수 있어요.<br>★Best = 최고성능 · 🔥Hot = 인기 · ⚡Fast = 빠른응답</div>
     <div class="sel-bar"><span style="color:var(--dim)">선택된 모델</span><span class="sel-cnt" id="selCnt">0</span></div>
     <div class="qsel">
       <button class="qbtn" onclick="selAll()">전체</button>
@@ -293,22 +307,28 @@ textarea::placeholder{color:var(--dim)}
 
 <!-- 이미지 모델 선택 -->
 <div class="card">
-  <div class="card-hdr"><span class="card-title">🖼️ 이미지 모델</span></div>
+  <div class="card-hdr"><span class="card-title">🖼️ 의료 이미지 생성 엔진</span></div>
   <div class="card-body">
+    <div style="font-size:10px;color:var(--dim);margin-bottom:4px;line-height:1.5">SOAP 작성 완료 후, 진단명에 맞는 의료 교육용 이미지를 자동 생성합니다.<br>기본 2개 선택되어 있고, 추가로 더 선택할 수 있어요.</div>
     <div class="img-model-grid">
       <label class="detail-opt sel"><input type="checkbox" name="imgEng" value="nanobana2" checked> 🍌 NanoBanana2</label>
       <label class="detail-opt sel"><input type="checkbox" name="imgEng" value="gpt" checked> 🤖 GPT Image</label>
-      <label class="detail-opt sel"><input type="checkbox" name="imgEng" value="grok" checked> ⚡ Grok</label>
-      <label class="detail-opt sel"><input type="checkbox" name="imgEng" value="nai" checked> 🎨 NovelAI</label>
+      <label class="detail-opt"><input type="checkbox" name="imgEng" value="grok"> ⚡ Grok</label>
+      <label class="detail-opt"><input type="checkbox" name="imgEng" value="nai"> 🎨 NovelAI</label>
     </div>
-    <div style="font-size:9px;color:var(--dim)">기본: NanoBanana2 (16:9 가로형) · SOAP 변환 후 자동 생성</div>
+    <div style="font-size:9px;color:var(--dim)">기본: NanoBanana2 + GPT Image (가로 16:9) · SOAP 완료 후 자동 생성됩니다</div>
   </div>
 </div>
 
 <!-- 진료 입력 -->
 <div class="card">
-  <div class="card-hdr"><span class="card-title">✏️ 진료 내용 입력</span></div>
+  <div class="card-hdr"><span class="card-title">✏️ 4단계: 진료 내용 입력</span></div>
   <div class="card-body">
+    <div style="font-size:10px;color:var(--dim);margin-bottom:6px;line-height:1.6">아래 4가지 방법 중 편한 것을 선택하세요.<br>
+    📋 <b>텍스트/클로바</b> = 직접 타이핑하거나 클로바노트 붙여넣기 &nbsp;
+    🎙 <b>녹음</b> = 마이크로 직접 녹음 &nbsp;
+    🎵 <b>음성파일</b> = 녹음파일 업로드 &nbsp;
+    📄 <b>문서</b> = txt 파일 불러오기</div>
     <div class="input-tabs">
       <button class="input-tab active" onclick="switchInput('text')">📋 텍스트/클로바</button>
       <button class="input-tab" onclick="switchInput('rec')">🎙 녹음</button>
@@ -371,9 +391,9 @@ Ctrl+Enter → 변환 시작"></textarea>
 
 <!-- MRI/CT 이미지 첨부 -->
 <div class="card">
-  <div class="card-hdr"><span class="card-title">🩻 MRI / CT 이미지 첨부</span><span style="font-size:9px;color:var(--dim)" id="imgAttachCount">미첨부</span></div>
+  <div class="card-hdr"><span class="card-title">🩻 선택: MRI / CT 이미지 첨부</span><span style="font-size:9px;color:var(--dim)" id="imgAttachCount">미첨부</span></div>
   <div class="card-body">
-    <div style="font-size:9px;color:var(--dim);margin-bottom:4px;line-height:1.5">환자의 MRI/CT 이미지를 첨부하면 AI가 영상 소견을 분석하여 Assessment에 반영합니다.<br>비전 지원 모델: GPT-5.4, Gemini 3.1, Claude Opus/Sonnet</div>
+    <div style="font-size:10px;color:var(--dim);margin-bottom:4px;line-height:1.6">환자의 MRI/CT 사진이 있으면 여기에 올려주세요 (선택사항).<br>AI가 영상을 분석하여 Assessment(평가)에 소견을 반영합니다.</div>
     <div class="upload-box" id="imgAttachBox" onclick="document.getElementById('medImg').click()" style="padding:10px">
       <input type="file" id="medImg" accept="image/*,.png,.jpg,.jpeg,.webp,.gif,.bmp,.dicom" style="display:none" multiple onchange="handleMedImgUpload(event)">
       <div style="font-size:1.1rem">🩻</div>
@@ -384,14 +404,22 @@ Ctrl+Enter → 변환 시작"></textarea>
   </div>
 </div>
 
-<button class="btn btn-go" id="goBtn" onclick="runAll()">🧼 비누 제조 시작 (SOAP 변환)</button>
+<button class="btn btn-go" id="goBtn" onclick="runAll()">🧼 5단계: 비누 제조 시작! (SOAP 변환)</button>
 <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
 </div>
 
 <!-- 오른쪽: 결과 -->
 <div>
   <div id="results" class="results-grid">
-    <div class="empty-state">← AI 모델 선택 후<br><strong style="color:var(--accent)">비누 제조</strong> 버튼을 누르세요<br><br><span style="font-size:10px">선택한 모든 AI가 동시에 SOAP을 작성합니다</span></div>
+    <div class="empty-state">
+      📋 <b>사용법</b><br><br>
+      1️⃣ API 키 입력 (처음 한 번만)<br>
+      2️⃣ 병원·의사 정보 설정 (처음 한 번만)<br>
+      3️⃣ SOAP 작성할 AI 모델 선택 (체크)<br>
+      4️⃣ 진료 내용 입력 (텍스트/녹음/파일)<br>
+      5️⃣ <strong style="color:var(--accent)">🧼 비누 제조</strong> 버튼 클릭!<br><br>
+      <span style="font-size:10px">선택한 모든 AI가 동시에 SOAP을 작성합니다.<br>결과를 비교한 후 마음에 드는 것을 📋 EMR 복사하세요.</span>
+    </div>
   </div>
   <!-- 이미지 결과 -->
   <div class="img-section" id="imgSection" style="display:none">
@@ -968,33 +996,4 @@ async function runWhisper(blob,filename,pipeId,s1Id,s2Id){
     let sendBlob=blob,sendName=filename;
     if(!ok.includes(ext)){try{sendBlob=await convertToWav(blob);sendName='recording.wav';}catch(e){sendName=filename.replace(/\.[^.]+$/,'.mp4');}}
     const fd=new FormData();fd.append('file',sendBlob,sendName);fd.append('model','whisper-1');fd.append('language','ko');fd.append('response_format','text');
-    const r=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd});
-    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error('Whisper: '+(e.error?.message||r.statusText));}
-    const transcript=await r.text();s1.className='stt-step done';s2.className='stt-step done';
-    document.getElementById('inputTxt').value=transcript;switchInput('text');
-    navigator.clipboard.writeText(transcript).catch(()=>{});
-    showToast('✅ 음성인식 완료!');
-  }catch(err){showToast('❌ '+err.message);s1.className='stt-step';s2.className='stt-step';}
-  finally{document.getElementById('recBtn')?.classList.remove('processing');document.getElementById('recLabel').textContent='탭하여 녹음 시작';}
-}
-
-async function convertToWav(blob){
-  const ctx=new(window.AudioContext||window.webkitAudioContext)({sampleRate:16000});
-  const buf=await ctx.decodeAudioData(await blob.arrayBuffer());
-  const samples=buf.getChannelData(0),wavBuf=new ArrayBuffer(44+samples.length*2),v=new DataView(wavBuf);
-  function ws(o,s){for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));}
-  ws(0,'RIFF');v.setUint32(4,36+samples.length*2,true);ws(8,'WAVE');ws(12,'fmt ');
-  v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,16000,true);
-  v.setUint32(28,32000,true);v.setUint16(32,2,true);v.setUint16(34,16,true);ws(36,'data');
-  v.setUint32(40,samples.length*2,true);
-  for(let i=0;i<samples.length;i++){const s=Math.max(-1,Math.min(1,samples[i]));v.setInt16(44+i*2,s<0?s*0x8000:s*0x7FFF,true);}
-  ctx.close();return new Blob([wavBuf],{type:'audio/wav'});
-}
-
-function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
-document.addEventListener('keydown',e=>{if(e.ctrlKey&&e.key==='Enter')runAll();});
-
-init();
-</script>
-</body>
-</html>
+    const r=await fetch('https://api.openai.
