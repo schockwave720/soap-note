@@ -1663,6 +1663,19 @@ function setupConn(c, statusEl) {
   });
 }
 
+// PeerJS 설정 (STUN 서버 명시)
+const PEER_CONFIG = {
+  debug: 0,
+  config: {
+    iceServers: [
+      {urls: 'stun:stun.l.google.com:19302'},
+      {urls: 'stun:stun1.l.google.com:19302'},
+      {urls: 'stun:stun2.l.google.com:19302'},
+      {urls: 'stun:stun3.l.google.com:19302'},
+    ]
+  }
+};
+
 function startHost() {
   document.getElementById('syncJoin').style.display = 'none';
   document.getElementById('syncHost').style.display = 'block';
@@ -1670,16 +1683,19 @@ function startHost() {
   const code = String(Math.floor(1000+Math.random()*9000));
   document.getElementById('myCode').textContent = code;
   if (peer) { try{peer.destroy()}catch(e){} }
-  peer = new Peer('soap-'+code, {debug: 0});
-  peer.on('open', () => {
+  peer = new Peer('soap-'+code, PEER_CONFIG);
+  peer.on('open', id => {
+    console.log('Host peer open:', id);
     document.getElementById('hostStatus').textContent = '코드: '+code+' — 상대방이 입력 대기 중...';
     document.getElementById('hostStatus').className = 'sync-status wait';
   });
   peer.on('connection', c => {
+    console.log('Host got connection');
     setupConn(c, document.getElementById('hostStatus'));
   });
   peer.on('error', e => {
-    document.getElementById('hostStatus').textContent = '오류: '+e.type+' — 페이지 새로고침 후 재시도';
+    console.error('Host error:', e);
+    document.getElementById('hostStatus').textContent = '오류: '+e.type+' — 새 코드로 재시도';
     document.getElementById('hostStatus').className = 'sync-status err';
   });
 }
@@ -1696,24 +1712,26 @@ function joinRoom() {
   const st = document.getElementById('joinStatus');
   st.textContent = '연결 중...'; st.className = 'sync-status wait';
   if (peer) { try{peer.destroy()}catch(e){} }
-  peer = new Peer(undefined, {debug: 0});
-  peer.on('open', () => {
+  peer = new Peer(undefined, PEER_CONFIG);
+  peer.on('open', id => {
+    console.log('Join peer open:', id);
     st.textContent = '서버 연결됨 — 상대방 찾는 중...';
     const c = peer.connect('soap-'+code, {reliable: true, serialization: 'json'});
+    console.log('Connecting to soap-'+code);
     setupConn(c, st);
-    // 10초 타임아웃
     setTimeout(() => {
-      if (!c.open) {
-        st.textContent = '시간 초과 — 양쪽 새로고침 후 재시도';
+      if (!peerConn || !peerConn.open) {
+        st.textContent = '시간 초과 — 양쪽 새로고침 후 재시도 (F5)';
         st.className = 'sync-status err';
       }
-    }, 10000);
+    }, 15000);
   });
   peer.on('error', e => {
+    console.error('Join error:', e);
     if (e.type === 'peer-unavailable') {
-      st.textContent = '코드 '+code+' 없음 — 상대방이 먼저 버튼 눌러야 함';
+      st.textContent = '코드 '+code+' 없음 — 상대방이 먼저 "태블릿" 버튼 눌러야 함';
     } else {
-      st.textContent = '실패: '+e.type+' — 새로고침 후 재시도';
+      st.textContent = '실패: '+e.type+' — 새로고침(F5) 후 재시도';
     }
     st.className = 'sync-status err';
   });
