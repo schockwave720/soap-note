@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>구리센트럴 비누제조기 v19 | SOAP Maker</title>
+<title>구리센트럴 비누제조기 v20 | SOAP Maker</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 :root{
@@ -151,7 +151,7 @@ textarea::placeholder{color:var(--dim)}
 <body>
 <div class="wrap">
 <div class="hdr">
-  <h1>🧼 구리센트럴 <span>비누제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v19</span></h1>
+  <h1>🧼 구리센트럴 <span>비누제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v20</span></h1>
   <p class="sub">음성·텍스트·문서·영상자료 등 다양한 입력 → Multi-AI SOAP 자동 작성 · 의료 이미지 생성 · MRI/CT 분석 반영</p>
 </div>
 
@@ -311,12 +311,12 @@ textarea::placeholder{color:var(--dim)}
   <div class="card-body">
     <div style="font-size:10px;color:var(--dim);margin-bottom:4px;line-height:1.5">SOAP 작성 완료 후, 진단명에 맞는 의료 교육용 이미지를 자동 생성합니다.<br>기본 2개 선택되어 있고, 추가로 더 선택할 수 있어요.</div>
     <div class="img-model-grid">
-      <label class="detail-opt sel"><input type="checkbox" name="imgEng" value="nanobana2" checked> 🍌 NanoBanana2</label>
+      <label class="detail-opt sel"><input type="checkbox" name="imgEng" value="nanobana2" checked> 🍌 NanoBanana2 (Gemini)</label>
       <label class="detail-opt sel"><input type="checkbox" name="imgEng" value="gpt" checked> 🤖 GPT Image</label>
       <label class="detail-opt"><input type="checkbox" name="imgEng" value="grok"> ⚡ Grok</label>
       <label class="detail-opt"><input type="checkbox" name="imgEng" value="nai"> 🎨 NovelAI</label>
     </div>
-    <div style="font-size:9px;color:var(--dim)">기본: NanoBanana2 + GPT Image (가로 16:9) · SOAP 완료 후 자동 생성됩니다</div>
+    <div style="font-size:9px;color:var(--dim)">기본: NanoBanana2(Gemini 키 사용) + GPT Image(OpenAI 키 사용) · 가로 16:9 · SOAP 완료 후 자동 생성</div>
   </div>
 </div>
 
@@ -497,7 +497,6 @@ const API_KEYS_CONFIG = [
   {id:'cerebras',label:'⚡ Cerebras',placeholder:'csk-...'},
   {id:'openrouter',label:'🌐 OpenRouter',placeholder:'sk-or-...'},
   {id:'zai',label:'🧠 Z.ai',placeholder:'...'},
-  {id:'krea',label:'🍌 Krea (NanoBanana)',placeholder:'...'},
   {id:'novelai',label:'🎨 NovelAI',placeholder:'pst-...'},
 ];
 
@@ -824,14 +823,14 @@ async function genImages(){
   document.querySelectorAll('input[name="imgEng"]:checked').forEach(cb=>engines.push(cb.value));
   if(!engines.length){showToast('⚠️ 이미지 엔진 선택');return;}
   const div=document.getElementById('imgResults');div.innerHTML='';
-  const labels={nanobana2:'🍌 NanoBanana2',gpt:'🤖 GPT Image',grok:'⚡ Grok',nai:'🎨 NovelAI'};
+  const labels={nanobana2:'🍌 NanoBanana2 (Gemini)',gpt:'🤖 GPT Image',grok:'⚡ Grok',nai:'🎨 NovelAI'};
   engines.forEach(e=>{const el=document.createElement('div');el.className='img-loading';el.id='img_'+e;el.innerHTML=`<div style="text-align:center"><div class="spinner"></div><div style="font-size:10px;color:var(--dim)">${labels[e]} 생성 중...</div></div>`;div.appendChild(el);});
 
   await Promise.allSettled(engines.map(async eng=>{
     try{
       let url;
       switch(eng){
-        case 'nanobana2': url=await genKrea(prompt,'nano-banana-2'); break;
+        case 'nanobana2': url=await genGeminiImage(prompt); break;
         case 'gpt': url=await genGPTImg(prompt); break;
         case 'grok': url=await genGrokImg(prompt); break;
         case 'nai': url=await genNAI(prompt); break;
@@ -843,53 +842,92 @@ async function genImages(){
   showToast('🖼️ 이미지 생성 완료!');
 }
 
-async function genKrea(prompt,model){
-  const key=getKey('krea');if(!key)throw new Error('Krea API 키 필요');
-  const eps={
-    'nano-banana-2':'/generate/image/google/nano-banana-flash',
-    'nano-banana-pro':'/generate/image/google/nano-banana-pro',
+// NanoBanana2 via Gemini API (Krea 불필요!)
+async function genGeminiImage(prompt){
+  const key=getKey('gemini');if(!key)throw new Error('Gemini API 키 필요');
+  const model='gemini-2.5-flash-preview-image';
+  const cleanPrompt=prompt.replace(/[{}\[\]<>]/g,'').substring(0,1800);
+  const body={
+    contents:[{parts:[{text:`Generate an image (horizontal wide 16:9): ${cleanPrompt}`}]}],
+    generationConfig:{responseModalities:['TEXT','IMAGE']}
   };
-  const ep=eps[model]||eps['nano-banana-2'];
-  const r=await fetch('https://api.krea.ai'+ep,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({prompt:prompt.substring(0,2500),width:1280,height:720})});
-  const d=await r.json();if(!r.ok)throw new Error('Krea: '+(d.error?.message||d.message||r.status));
-  const jobId=d.job_id||d.id;if(!jobId)throw new Error('Krea: Job ID 없음');
-  for(let i=0;i<60;i++){
-    await new Promise(r=>setTimeout(r,2000));
-    const sr=await fetch('https://api.krea.ai/jobs/'+jobId,{headers:{'Authorization':'Bearer '+key}});
-    const sd=await sr.json();
-    if(sd.status==='completed'){const url=sd.result?.urls?.[0]||sd.result?.url;if(url)return url;throw new Error('Krea: URL 없음');}
-    if(sd.status==='failed')throw new Error('Krea: '+sd.error);
+  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,{
+    method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)
+  });
+  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error('Gemini: '+(e.error?.message||r.status));}
+  const data=await r.json();
+  // 이미지 추출
+  const parts=data.candidates?.[0]?.content?.parts||data.content?.parts||[];
+  for(const part of parts){
+    const inline=part.inlineData||part.inline_data;
+    if(inline?.mimeType?.startsWith('image/'))return `data:${inline.mimeType};base64,${inline.data}`;
   }
-  throw new Error('Krea: Timeout');
+  throw new Error('Gemini: 이미지 없음');
 }
 
+// GPT Image
 async function genGPTImg(prompt){
   const key=getKey('openai');if(!key)throw new Error('OpenAI 키 필요');
-  const r=await fetch('https://api.openai.com/v1/images/generations',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:'gpt-image-1',prompt:prompt.substring(0,4000),n:1,size:'1536x1024',quality:'medium'})});
+  const r=await fetch('https://api.openai.com/v1/images/generations',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:'gpt-image-1',prompt:prompt.substring(0,4000),n:1,size:'1536x1024',quality:'low'})});
   const d=await r.json();if(d.error)throw new Error(d.error.message);
-  const b64=d?.data?.[0]?.b64_json;if(b64){const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));return URL.createObjectURL(new Blob([bytes],{type:'image/png'}));}
-  return d?.data?.[0]?.url||'';
+  const b64=d?.data?.[0]?.b64_json;
+  if(b64)return `data:image/png;base64,${b64}`;
+  const url=d?.data?.[0]?.url;if(url)return url;
+  throw new Error('GPT Image: 결과 없음');
 }
 
+// Grok Image (CORS 프록시 체인)
 async function genGrokImg(prompt){
   const key=getKey('xai');if(!key)throw new Error('xAI 키 필요');
-  const r=await fetch('https://api.x.ai/v1/images/generations',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:'grok-2-image',prompt:prompt.substring(0,4000),n:1,response_format:'b64_json'})});
-  const d=await r.json();if(d.error)throw new Error(d.error.message);
-  const b64=d?.data?.[0]?.b64_json;if(b64){const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));return URL.createObjectURL(new Blob([bytes],{type:'image/png'}));}
-  return d?.data?.[0]?.url||'';
+  const apiUrl='https://api.x.ai/v1/images/generations';
+  const payload=JSON.stringify({model:'grok-imagine-image',prompt:prompt.substring(0,4000),n:1,aspect_ratio:'16:9',response_format:'url'});
+  const hdrs={'Authorization':'Bearer '+key,'Content-Type':'application/json'};
+  // 직접 + CORS 프록시 시도
+  const proxies=[
+    apiUrl,
+    'https://corsproxy.org/?'+encodeURIComponent(apiUrl),
+    'https://corsproxy.io/?'+encodeURIComponent(apiUrl),
+  ];
+  let d=null,lastErr='';
+  for(const url of proxies){
+    try{
+      const controller=new AbortController();
+      const tid=setTimeout(()=>controller.abort(),90000);
+      const r=await fetch(url,{method:'POST',headers:hdrs,body:payload,signal:controller.signal});
+      clearTimeout(tid);
+      if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e?.error?.message||'Grok '+r.status);}
+      d=await r.json();break;
+    }catch(e){
+      lastErr=e.message;
+      if(e.name==='AbortError'||e.message.includes('Failed to fetch')||e.message.includes('NetworkError'))continue;
+      throw e;
+    }
+  }
+  if(!d)throw new Error('Grok CORS 차단: '+lastErr);
+  const b64=d?.data?.[0]?.b64_json;
+  if(b64)return `data:image/png;base64,${b64}`;
+  const url2=d?.data?.[0]?.url;if(url2)return url2;
+  throw new Error('Grok: 이미지 없음');
 }
 
+// NovelAI
 async function genNAI(prompt){
   const key=getKey('novelai');if(!key)throw new Error('NovelAI 키 필요');
   const r=await fetch('https://image.novelai.net/ai/generate-image',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key,'Origin':'https://novelai.net','Referer':'https://novelai.net/'},body:JSON.stringify({input:`masterpiece, best quality, ${prompt}`,model:'nai-diffusion-4-5-full',action:'generate',parameters:{params_version:3,width:1216,height:832,n_samples:1,sampler:'k_dpmpp_2m_sde',steps:28,scale:5.3,uncond_scale:1,cfg_rescale:0,noise_schedule:'karras',autoSmea:true,qualityToggle:true,ucPreset:0,legacy:false,legacy_v3_extend:false,add_original_image:true,prefer_brownian:true,deliberate_euler_ancestral_bug:false,v4_model_preset:'Illustrative',negative_prompt:'worst quality, bad quality, lowres, text, watermark',seed:Math.floor(Math.random()*4294967295),v4_prompt:{caption:{base_caption:`masterpiece, best quality, ${prompt}`,char_captions:[]},use_coords:false,use_order:true},v4_negative_prompt:{caption:{base_caption:'worst quality, bad quality, lowres, text, watermark',char_captions:[]},use_coords:false,use_order:false,legacy_uc:false},characterPrompts:[],reference_image_multiple:[],reference_information_extracted_multiple:[],reference_strength_multiple:[]}})});
   if(!r.ok)throw new Error('NAI '+r.status);
   const zip=await JSZip.loadAsync(await r.arrayBuffer());
   const fnames=Object.keys(zip.files);
-  if(fnames.length>0)return URL.createObjectURL(await zip.files[fnames[0]].async('blob'));
+  if(fnames.length>0){
+    const blob=await zip.files[fnames[0]].async('blob');
+    return URL.createObjectURL(new Blob([blob],{type:'image/png'}));
+  }
   throw new Error('NAI: 이미지 없음');
 }
 
-function downloadImg(src,fn){const a=document.createElement('a');a.href=src;a.download=fn;document.body.appendChild(a);a.click();a.remove();}
+function downloadImg(src,fn){
+  const a=document.createElement('a');a.href=src;a.download=fn;
+  document.body.appendChild(a);a.click();a.remove();
+}
 
 // ===== INPUT TABS =====
 function switchInput(mode){
