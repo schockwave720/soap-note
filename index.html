@@ -576,14 +576,14 @@ function renderApiKeys() {
       <span class="api-st no" id="st_${c.id}">미입력</span>
     </div></div>`).join('');
   API_KEYS_CONFIG.forEach(c=>{
-    const s=localStorage.getItem('soap_key_'+c.id);
-    if(s){document.getElementById('key_'+c.id).value=s;apiKeys[c.id]=s;document.getElementById('st_'+c.id).textContent='✓';document.getElementById('st_'+c.id).className='api-st ok';}
+    let s=localStorage.getItem('soap_key_'+c.id);
+    if(s){s=s.replace(/[\s\u200b\u200c\u200d\ufeff\u00a0]/g,'').trim();localStorage.setItem('soap_key_'+c.id,s);document.getElementById('key_'+c.id).value=s;apiKeys[c.id]=s;document.getElementById('st_'+c.id).textContent='✓';document.getElementById('st_'+c.id).className='api-st ok';}
   });
 }
 
 function saveKey(id,val){
-  val=val.trim();
-  if(val.length>5){apiKeys[id]=val;localStorage.setItem('soap_key_'+id,val);document.getElementById('st_'+id).textContent='✓';document.getElementById('st_'+id).className='api-st ok';}
+  val=val.replace(/[\s\u200b\u200c\u200d\ufeff\u00a0]/g,'').trim();
+  if(val.length>5){apiKeys[id]=val;localStorage.setItem('soap_key_'+id,val);document.getElementById('key_'+id).value=val;document.getElementById('st_'+id).textContent='✓';document.getElementById('st_'+id).className='api-st ok';}
   else{delete apiKeys[id];localStorage.removeItem('soap_key_'+id);document.getElementById('st_'+id).textContent='미입력';document.getElementById('st_'+id).className='api-st no';}
 }
 
