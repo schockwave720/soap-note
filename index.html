@@ -74,15 +74,21 @@ details.card>summary::-webkit-details-marker{display:none}
 .detail-opt:hover{border-color:var(--accent)}
 .detail-opt.sel{border-color:var(--green);background:rgba(6,214,160,.15);color:var(--green)}
 .detail-opt input{display:none}
-.input-tabs{display:flex;gap:0;margin-bottom:6px;border-radius:6px;overflow:hidden;border:1px solid var(--border)}
-.input-tab{flex:1;padding:7px 4px;text-align:center;font-size:10px;font-weight:600;cursor:pointer;background:var(--surface2);color:var(--dim);border:none;transition:all .2s}
-.input-tab.active{background:var(--accent);color:#fff}
+.input-tabs{display:flex;gap:0;margin-bottom:8px;border-radius:8px;overflow:hidden;border:2px solid var(--accent)}
+.input-tab{flex:1;padding:10px 4px;text-align:center;font-size:11px;font-weight:700;cursor:pointer;background:var(--surface2);color:var(--dim);border:none;transition:all .2s}
+.input-tab.active{background:linear-gradient(135deg,#0077b6,var(--accent));color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.3)}
 .input-pane{display:none}.input-pane.active{display:block}
+textarea#inputTxt{width:100%;background:rgba(0,180,216,.04);border:1.5px solid rgba(0,180,216,.2);border-radius:8px;outline:none;color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:13px;line-height:1.8;resize:vertical;min-height:200px;padding:12px;transition:border-color .2s}
+textarea#inputTxt:focus{border-color:var(--accent);background:rgba(0,180,216,.07);box-shadow:0 0 12px rgba(0,180,216,.1)}
+textarea#inputTxt::placeholder{color:var(--dim);font-size:12px}
 textarea{width:100%;background:transparent;border:none;outline:none;color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:12px;line-height:1.7;resize:vertical;min-height:120px}
 textarea::placeholder{color:var(--dim)}
+.card-input{border:1.5px solid rgba(0,180,216,.35);box-shadow:0 0 16px rgba(0,180,216,.08);position:relative}
+.card-input>.card-hdr{background:linear-gradient(135deg,rgba(0,119,182,.25),rgba(0,180,216,.15));border-bottom:1.5px solid rgba(0,180,216,.3)}
+.card-input>.card-hdr .card-title{font-size:14px;color:#fff}
 .btn{width:100%;padding:10px;border:none;border-radius:6px;font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:5px}
-.btn-go{background:linear-gradient(135deg,#0077b6,var(--accent));color:#fff}
-.btn-go:hover{opacity:.9;transform:translateY(-1px)}
+.btn-go{background:linear-gradient(135deg,#0077b6,var(--accent));color:#fff;font-size:14px;padding:14px;border-radius:8px;box-shadow:0 4px 16px rgba(0,180,216,.3)}
+.btn-go:hover{opacity:.9;transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,180,216,.4)}
 .btn-go:disabled{opacity:.5;cursor:not-allowed;transform:none}
 .btn-sm{padding:4px 10px;width:auto;font-size:10px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer}
 .btn-sm:hover{border-color:var(--accent);color:var(--accent)}
@@ -113,10 +119,10 @@ textarea::placeholder{color:var(--dim)}
 .empty-state{padding:50px 20px;text-align:center;color:var(--dim);font-size:12px;line-height:2}
 .toast{position:fixed;bottom:20px;right:20px;background:var(--green);color:#080d1a;padding:8px 16px;border-radius:6px;font-size:11px;font-weight:700;opacity:0;transform:translateY(6px);transition:all .3s;z-index:999;pointer-events:none}
 .toast.show{opacity:1;transform:translateY(0)}
-.rec-zone{display:flex;flex-direction:column;align-items:center;padding:16px 0}
-.rec-btn{width:80px;height:80px;border-radius:50%;border:3px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .3s}
-.rec-btn:hover{border-color:var(--accent);box-shadow:0 0 16px rgba(0,180,216,.2)}
-.rec-btn.recording{border-color:#ef4444;box-shadow:0 0 24px rgba(239,68,68,.3);animation:recPulse 1.5s ease-in-out infinite}
+.rec-zone{display:flex;flex-direction:column;align-items:center;padding:20px 0}
+.rec-btn{width:100px;height:100px;border-radius:50%;border:3px solid var(--accent);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .3s;box-shadow:0 0 20px rgba(0,180,216,.15)}
+.rec-btn:hover{border-color:#fff;box-shadow:0 0 28px rgba(0,180,216,.35)}
+.rec-btn.recording{border-color:#ef4444;box-shadow:0 0 32px rgba(239,68,68,.4);animation:recPulse 1.5s ease-in-out infinite}
 .rec-btn.processing{border-color:#eab308;pointer-events:none}
 @keyframes recPulse{0%,100%{box-shadow:0 0 16px rgba(239,68,68,.3)}50%{box-shadow:0 0 36px rgba(239,68,68,.4)}}
 .rec-dot{width:28px;height:28px;border-radius:50%;background:var(--accent);transition:all .3s}
@@ -125,8 +131,8 @@ textarea::placeholder{color:var(--dim)}
 .rec-lbl{margin-top:8px;font-size:10px;color:var(--dim)}
 .rec-time{margin-top:3px;font-family:'JetBrains Mono',monospace;font-size:1rem;color:#ef4444;display:none}
 .rec-time.show{display:block}
-.upload-box{border:2px dashed var(--border);border-radius:6px;padding:14px;text-align:center;cursor:pointer;transition:all .2s;margin-top:6px}
-.upload-box:hover{border-color:var(--accent);background:rgba(0,180,216,.02)}
+.upload-box{border:2px dashed rgba(0,180,216,.4);border-radius:8px;padding:18px;text-align:center;cursor:pointer;transition:all .2s;margin-top:6px;background:rgba(0,180,216,.03)}
+.upload-box:hover{border-color:var(--accent);background:rgba(0,180,216,.06);box-shadow:0 0 12px rgba(0,180,216,.1)}
 .upload-box.processing{pointer-events:none;opacity:.6}
 .stt-pipeline{background:var(--surface2);border-radius:5px;padding:6px 8px;margin-top:6px;display:none}
 .stt-pipeline.show{display:block}
@@ -336,7 +342,7 @@ textarea::placeholder{color:var(--dim)}
 </div>
 
 <!-- 진료 입력 -->
-<div class="card">
+<div class="card card-input">
   <div class="card-hdr"><span class="card-title">✏️ 4단계: 진료 내용 입력</span></div>
   <div class="card-body">
     <div style="font-size:10px;color:var(--dim);margin-bottom:6px;line-height:1.6">아래 4가지 방법 중 편한 것을 선택하세요.<br>
