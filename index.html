@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>구리센트럴 비누제조기 v20 | SOAP Maker</title>
+<title>구리센트럴 비누제조기 v21 | SOAP Maker</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 :root{
@@ -151,7 +151,7 @@ textarea::placeholder{color:var(--dim)}
 <body>
 <div class="wrap">
 <div class="hdr">
-  <h1>🧼 구리센트럴 <span>비누제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v20</span></h1>
+  <h1>🧼 구리센트럴 <span>비누제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v21</span></h1>
   <p class="sub">음성·텍스트·문서·영상자료 등 다양한 입력 → Multi-AI SOAP 자동 작성 · 의료 이미지 생성 · MRI/CT 분석 반영</p>
 </div>
 
@@ -309,14 +309,24 @@ textarea::placeholder{color:var(--dim)}
 <div class="card">
   <div class="card-hdr"><span class="card-title">🖼️ 의료 이미지 생성 엔진</span></div>
   <div class="card-body">
-    <div style="font-size:10px;color:var(--dim);margin-bottom:4px;line-height:1.5">SOAP 작성 완료 후, 진단명에 맞는 의료 교육용 이미지를 자동 생성합니다.<br>기본 2개 선택되어 있고, 추가로 더 선택할 수 있어요.</div>
+    <div style="font-size:10px;color:var(--dim);margin-bottom:4px;line-height:1.5">SOAP 작성 완료 후, 진단명에 맞는 의료 교육용 이미지를 자동 생성합니다.<br>원하는 엔진을 선택하세요. Gemini 3종 + OpenAI 2종 + Grok + NovelAI = 7개!</div>
+    <div style="font-size:9px;font-weight:600;color:var(--gemini);margin:4px 0 2px">💎 Gemini 이미지 (Nano Banana 시리즈)</div>
     <div class="img-model-grid">
-      <label class="detail-opt sel"><input type="checkbox" name="imgEng" value="nanobana2" checked> 🍌 NanoBanana2 (Gemini)</label>
-      <label class="detail-opt sel"><input type="checkbox" name="imgEng" value="gpt" checked> 🤖 GPT Image</label>
+      <label class="detail-opt sel"><input type="checkbox" name="imgEng" value="nanobana" checked> 🍌 NanoBanana (OG)</label>
+      <label class="detail-opt"><input type="checkbox" name="imgEng" value="nanobana2"> 🍌2 NanoBanana2 (4K)</label>
+      <label class="detail-opt"><input type="checkbox" name="imgEng" value="nanobanapro"> 🍌👑 NanoBanana Pro</label>
+    </div>
+    <div style="font-size:9px;font-weight:600;color:var(--openai);margin:6px 0 2px">🤖 OpenAI 이미지</div>
+    <div class="img-model-grid">
+      <label class="detail-opt sel"><input type="checkbox" name="imgEng" value="gpt" checked> 🤖 GPT Image 1</label>
+      <label class="detail-opt"><input type="checkbox" name="imgEng" value="dalle3"> 🎨 DALL-E 3</label>
+    </div>
+    <div style="font-size:9px;font-weight:600;color:var(--dim);margin:6px 0 2px">기타 엔진</div>
+    <div class="img-model-grid">
       <label class="detail-opt"><input type="checkbox" name="imgEng" value="grok"> ⚡ Grok</label>
       <label class="detail-opt"><input type="checkbox" name="imgEng" value="nai"> 🎨 NovelAI</label>
     </div>
-    <div style="font-size:9px;color:var(--dim)">기본: NanoBanana2(Gemini 키 사용) + GPT Image(OpenAI 키 사용) · 가로 16:9 · SOAP 완료 후 자동 생성</div>
+    <div style="font-size:9px;color:var(--dim);margin-top:4px">기본: NanoBanana(OG) + GPT Image · 🍌OG=$0.039 · 🍌2=$0.045~0.15 · 🍌Pro=$0.134 · DALL-E 3=무료티어있음</div>
   </div>
 </div>
 
@@ -823,15 +833,18 @@ async function genImages(){
   document.querySelectorAll('input[name="imgEng"]:checked').forEach(cb=>engines.push(cb.value));
   if(!engines.length){showToast('⚠️ 이미지 엔진 선택');return;}
   const div=document.getElementById('imgResults');div.innerHTML='';
-  const labels={nanobana2:'🍌 NanoBanana2 (Gemini)',gpt:'🤖 GPT Image',grok:'⚡ Grok',nai:'🎨 NovelAI'};
+  const labels={nanobana:'🍌 NanoBanana (OG)',nanobana2:'🍌2 NanoBanana2 (4K)',nanobanapro:'🍌👑 NanoBanana Pro',gpt:'🤖 GPT Image 1',dalle3:'🎨 DALL-E 3',grok:'⚡ Grok',nai:'🎨 NovelAI'};
   engines.forEach(e=>{const el=document.createElement('div');el.className='img-loading';el.id='img_'+e;el.innerHTML=`<div style="text-align:center"><div class="spinner"></div><div style="font-size:10px;color:var(--dim)">${labels[e]} 생성 중...</div></div>`;div.appendChild(el);});
 
   await Promise.allSettled(engines.map(async eng=>{
     try{
       let url;
       switch(eng){
-        case 'nanobana2': url=await genGeminiImage(prompt); break;
+        case 'nanobana': url=await genGeminiImage(prompt,'gemini-2.5-flash-image'); break;
+        case 'nanobana2': url=await genGeminiImage(prompt,'gemini-3.1-flash-image-preview'); break;
+        case 'nanobanapro': url=await genGeminiImage(prompt,'gemini-3-pro-image-preview'); break;
         case 'gpt': url=await genGPTImg(prompt); break;
+        case 'dalle3': url=await genDalle3(prompt); break;
         case 'grok': url=await genGrokImg(prompt); break;
         case 'nai': url=await genNAI(prompt); break;
       }
@@ -842,10 +855,10 @@ async function genImages(){
   showToast('🖼️ 이미지 생성 완료!');
 }
 
-// NanoBanana2 via Gemini API (Krea 불필요!)
-async function genGeminiImage(prompt){
+// Gemini Image (NanoBanana 시리즈 공용)
+async function genGeminiImage(prompt,model){
   const key=getKey('gemini');if(!key)throw new Error('Gemini API 키 필요');
-  const model='gemini-2.5-flash-preview-image';
+  if(!model)model='gemini-2.5-flash-image';
   const cleanPrompt=prompt.replace(/[{}\[\]<>]/g,'').substring(0,1800);
   const body={
     contents:[{parts:[{text:`Generate an image (horizontal wide 16:9): ${cleanPrompt}`}]}],
@@ -874,6 +887,17 @@ async function genGPTImg(prompt){
   if(b64)return `data:image/png;base64,${b64}`;
   const url=d?.data?.[0]?.url;if(url)return url;
   throw new Error('GPT Image: 결과 없음');
+}
+
+// DALL-E 3
+async function genDalle3(prompt){
+  const key=getKey('openai');if(!key)throw new Error('OpenAI 키 필요');
+  const r=await fetch('https://api.openai.com/v1/images/generations',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:'dall-e-3',prompt:prompt.substring(0,4000),n:1,size:'1792x1024',quality:'standard',style:'natural'})});
+  const d=await r.json();if(d.error)throw new Error(d.error.message);
+  const url=d?.data?.[0]?.url;if(url)return url;
+  const b64=d?.data?.[0]?.b64_json;
+  if(b64)return `data:image/png;base64,${b64}`;
+  throw new Error('DALL-E 3: 결과 없음');
 }
 
 // Grok Image (CORS 프록시 체인)
