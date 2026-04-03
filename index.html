@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>구리센트럴 비누제조기 v21 | SOAP Maker</title>
+<title>구리센트럴 비누제조기 v22 | SOAP Maker</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 :root{
@@ -159,7 +159,7 @@ textarea::placeholder{color:var(--dim)}
 <body>
 <div class="wrap">
 <div class="hdr">
-  <h1>🧼 구리센트럴 <span>비누제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v21</span></h1>
+  <h1>🧼 구리센트럴 <span>비누제조기</span> <span style="font-size:11px;color:var(--dim);font-weight:400">v22</span></h1>
   <p class="sub">음성·텍스트·문서·영상자료 등 다양한 입력 → Multi-AI SOAP 자동 작성 · 의료 이미지 생성 · MRI/CT 분석 반영</p>
 </div>
 
@@ -174,7 +174,8 @@ textarea::placeholder{color:var(--dim)}
       💡 <b>API 키란?</b> AI 서비스를 사용하기 위한 비밀번호예요.<br>
       각 AI 회사 홈페이지에서 무료/유료 키를 발급받아 아래에 입력하세요.<br>
       <span style="color:var(--green)">✓ 한 번 입력하면 브라우저에 저장되어 매번 입력할 필요 없어요.</span><br>
-      <span style="color:var(--dim)">• 음성인식(녹음)을 사용하려면 <b>OpenAI 키</b>가 반드시 필요합니다.</span><br>
+      <span style="color:var(--dim)">• 음성인식(녹음)을 사용하려면 <b>OpenAI 키</b> 또는 <b>Groq 키</b>가 필요합니다.</span><br>
+      <span style="color:var(--dim)">• Groq Whisper는 초고속 무료 음성인식! Groq 키만으로도 녹음 가능.</span><br>
       <span style="color:var(--dim)">• 나머지는 사용할 AI만 입력하면 됩니다. 전부 입력할 필요 없어요.</span>
     </div>
     <div class="api-wrap" id="apiWrap"></div>
@@ -391,17 +392,33 @@ MRI 찍고 가바펜틴 시작하려고 함.
     </div>
     <div class="input-pane" id="pane-rec">
       <div style="font-size:9px;color:var(--dim);text-align:center;margin-bottom:2px">HTTPS 환경 필요 (GitHub Pages) · <span id="recMimeInfo"></span></div>
+      <div style="display:flex;align-items:center;gap:4px;justify-content:center;margin-bottom:6px">
+        <span style="font-size:10px;color:var(--dim)">🎤 STT 엔진:</span>
+        <select class="api-inp" id="sttEngine" style="width:auto;font-size:10px;padding:4px 8px">
+          <option value="openai" selected>🤖 OpenAI Whisper (기본)</option>
+          <option value="groq-turbo">🚀 Groq Whisper Turbo (초고속)</option>
+          <option value="groq-v3">🚀 Groq Whisper V3 (고정밀)</option>
+        </select>
+      </div>
       <div class="rec-zone">
         <div class="rec-btn" id="recBtn" onclick="toggleRecord()"><div class="rec-dot"></div></div>
         <div class="rec-lbl" id="recLabel">탭하여 녹음 시작</div>
         <div class="rec-time" id="recTimer">00:00</div>
       </div>
       <div class="stt-pipeline" id="sttPipe1">
-        <div class="stt-step" id="stt1a"><div class="stt-dot"></div>Whisper 음성인식 중...</div>
+        <div class="stt-step" id="stt1a"><div class="stt-dot"></div>음성인식 중...</div>
         <div class="stt-step" id="stt1b"><div class="stt-dot"></div>텍스트 변환 완료</div>
       </div>
     </div>
     <div class="input-pane" id="pane-file">
+      <div style="display:flex;align-items:center;gap:4px;justify-content:center;margin-bottom:6px">
+        <span style="font-size:10px;color:var(--dim)">🎤 STT 엔진:</span>
+        <select class="api-inp" id="sttEngine2" style="width:auto;font-size:10px;padding:4px 8px">
+          <option value="openai" selected>🤖 OpenAI Whisper (기본)</option>
+          <option value="groq-turbo">🚀 Groq Whisper Turbo (초고속)</option>
+          <option value="groq-v3">🚀 Groq Whisper V3 (고정밀)</option>
+        </select>
+      </div>
       <div class="upload-box" id="uploadBox" onclick="document.getElementById('audioFile').click()">
         <input type="file" id="audioFile" accept="audio/*,video/*,.m4a,.mp3,.wav,.webm,.mp4,.ogg,.flac" style="display:none" onchange="handleFileUpload(event)">
         <div style="font-size:1.1rem">📁</div>
@@ -409,7 +426,7 @@ MRI 찍고 가바펜틴 시작하려고 함.
         <div style="font-size:9px;color:var(--dim);margin-top:2px">m4a, mp3, wav, webm 등 (25MB)</div>
       </div>
       <div class="stt-pipeline" id="sttPipe2">
-        <div class="stt-step" id="stt2a"><div class="stt-dot"></div>Whisper 음성인식 중...</div>
+        <div class="stt-step" id="stt2a"><div class="stt-dot"></div>음성인식 중...</div>
         <div class="stt-step" id="stt2b"><div class="stt-dot"></div>텍스트 변환 완료</div>
       </div>
     </div>
@@ -477,9 +494,10 @@ MRI 찍고 가바펜틴 시작하려고 함.
 // ===== PROVIDERS =====
 const PROVIDERS = {
   cerebras:{name:'⚡ Cerebras',color:'cerebras',apiType:'openai',baseUrl:'https://api.cerebras.ai/v1',keyId:'cerebras',models:[
-    {id:'cb-qw3',name:'Qwen3 235B',m:'qwen-3-235b-a22b-instruct-2507',tag:'best'},
-    {id:'cb-glm47',name:'GLM 4.7 (355B)',m:'zai-glm-4.7',tag:'hot'},
-    {id:'cb-llama31',name:'Llama 3.1 8B',m:'llama3.1-8b',tag:'fast'},
+    {id:'cb-qw3',name:'Qwen3 235B (1400t/s)',m:'qwen-3-235b-a22b-instruct-2507',tag:'best'},
+    {id:'cb-gptoss',name:'GPT-OSS 120B (3000t/s)',m:'gpt-oss-120b',tag:'hot'},
+    {id:'cb-glm47',name:'GLM 4.7 (355B)',m:'zai-glm-4.7',tag:'new'},
+    {id:'cb-llama31',name:'Llama 3.1 8B (2200t/s)',m:'llama3.1-8b',tag:'fast'},
   ]},
   gemini:{name:'💎 Gemini',color:'gemini',apiType:'gemini',baseUrl:'https://generativelanguage.googleapis.com/v1beta',keyId:'gemini',models:[
     {id:'gem31p',name:'Gemini 3.1 Pro',m:'gemini-3.1-pro-preview',tag:'best'},
@@ -487,9 +505,9 @@ const PROVIDERS = {
     {id:'gem31f',name:'Gemini 3.1 Flash',m:'gemini-3.1-flash-preview',tag:'fast'},
   ]},
   groq:{name:'🚀 Groq',color:'groq',apiType:'openai',baseUrl:'https://api.groq.com/openai/v1',keyId:'groq',models:[
-    {id:'grq-gptoss',name:'GPT-OSS 120B',m:'openai/gpt-oss-120b',tag:'best'},
-    {id:'grq-llama33',name:'Llama 3.3 70B',m:'llama-3.3-70b-versatile',tag:'hot'},
-    {id:'grq-qwen3',name:'Qwen 3 32B',m:'qwen/qwen3-32b',tag:'fast'},
+    {id:'grq-gptoss',name:'GPT-OSS 120B (500t/s)',m:'openai/gpt-oss-120b',tag:'best'},
+    {id:'grq-llama4',name:'Llama 4 Scout 17B',m:'meta-llama/llama-4-scout-17b-16e-instruct',tag:'hot'},
+    {id:'grq-gptoss20',name:'GPT-OSS 20B (1000t/s)',m:'openai/gpt-oss-20b',tag:'fast'},
   ]},
   deepseek:{name:'💰 DeepSeek',color:'deepseek',apiType:'openai',baseUrl:'https://api.deepseek.com/v1',keyId:'deepseek',models:[
     {id:'ds-r1',name:'R1 Reasoner',m:'deepseek-reasoner',tag:'best'},
@@ -516,7 +534,7 @@ const API_KEYS_CONFIG = [
   {id:'openai',label:'🤖 OpenAI (Whisper+GPT)',placeholder:'sk-...'},
   {id:'anthropic',label:'🧠 Claude',placeholder:'sk-ant-...'},
   {id:'gemini',label:'💎 Gemini',placeholder:'AIza...'},
-  {id:'groq',label:'🚀 Groq',placeholder:'gsk_...'},
+  {id:'groq',label:'🚀 Groq (텍스트+Whisper STT)',placeholder:'gsk_...'},
   {id:'xai',label:'🤖 xAI (Grok)',placeholder:'xai-...'},
   {id:'deepseek',label:'💰 DeepSeek',placeholder:'sk-...'},
   {id:'cerebras',label:'⚡ Cerebras',placeholder:'csk-...'},
@@ -777,9 +795,13 @@ async function callAPI(provKey,modelInfo,inputText,detailLevel,langMode){
     } else {
       body.max_tokens=1500;
     }
-    // Cerebras GLM 4.7: reasoning 비활성화 (SOAP 직접 출력)
-    if(provKey==='cerebras'&&modelInfo.m.includes('glm')){
+    // Cerebras GLM 4.7 / Qwen3: reasoning 비활성화 (SOAP 직접 출력)
+    if(provKey==='cerebras'&&(modelInfo.m.includes('glm')||modelInfo.m.includes('qwen'))){
       body.reasoning_effort='none';
+    }
+    // Groq: thinking 모델 대응 (system prompt에 직접 지시)
+    if(provKey==='groq'&&(modelInfo.m.includes('qwen3')||modelInfo.m.includes('llama-4'))){
+      messages[0].content+='\n\nIMPORTANT: Do NOT use <think> tags. Respond with the SOAP note directly.';
     }
     const r=await fetch(`${prov.baseUrl}/chat/completions`,{method:'POST',headers:hdrs,body:JSON.stringify(body)});
     const d=await r.json();if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
@@ -1052,7 +1074,9 @@ function updateRecTimer(){recSeconds++;document.getElementById('recTimer').textC
 
 async function toggleRecord(){if(isRecording)stopRecording();else startRecording();}
 async function startRecording(){
-  if(!getKey('openai')){showToast('⚠️ OpenAI API Key 필요 (Whisper)');return;}
+  const sttEng=document.getElementById('sttEngine')?.value||'openai';
+  const needKey=sttEng.startsWith('groq')?'groq':'openai';
+  if(!getKey(needKey)){showToast('⚠️ '+(needKey==='groq'?'Groq':'OpenAI')+' API Key 필요');return;}
   try{
     const stream=await navigator.mediaDevices.getUserMedia({audio:{sampleRate:16000,channelCount:1,echoCancellation:true,noiseSuppression:true}});
     const mimes=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4','audio/mpeg'];
@@ -1065,7 +1089,8 @@ async function startRecording(){
       const blob=new Blob(audioChunks,{type:mediaRecorder.mimeType||'audio/webm'});
       let ext='webm';const am=mediaRecorder.mimeType||'';
       if(am.includes('mp4'))ext='mp4';else if(am.includes('ogg'))ext='ogg';
-      runWhisper(blob,'recording.'+ext,'sttPipe1','stt1a','stt1b');
+      const sttEng=document.getElementById('sttEngine')?.value||'openai';
+      runWhisper(blob,'recording.'+ext,'sttPipe1','stt1a','stt1b',sttEng);
     };
     mediaRecorder.start(1000);isRecording=true;recSeconds=0;
     document.getElementById('recBtn').classList.add('recording');
@@ -1084,11 +1109,13 @@ function stopRecording(){
 
 async function handleFileUpload(e){
   const file=e.target.files[0];if(!file)return;
-  if(!getKey('openai')){showToast('⚠️ OpenAI Key 필요');e.target.value='';return;}
+  const sttEng=document.getElementById('sttEngine2')?.value||'openai';
+  const needKey=sttEng.startsWith('groq')?'groq':'openai';
+  if(!getKey(needKey)){showToast('⚠️ '+(needKey==='groq'?'Groq':'OpenAI')+' Key 필요');e.target.value='';return;}
   if(file.size>25*1024*1024){showToast('⚠️ 25MB 초과');e.target.value='';return;}
   document.getElementById('uploadBox').classList.add('processing');
   document.getElementById('uploadText').textContent='처리 중: '+file.name;
-  await runWhisper(file,file.name,'sttPipe2','stt2a','stt2b');
+  await runWhisper(file,file.name,'sttPipe2','stt2a','stt2b',sttEng);
   document.getElementById('uploadBox').classList.remove('processing');
   document.getElementById('uploadText').textContent='녹음 파일 선택';e.target.value='';
 }
@@ -1144,21 +1171,32 @@ function renderMedImgPreview(){
 
 function removeMedImg(i){medImages.splice(i,1);renderMedImgPreview();}
 
-async function runWhisper(blob,filename,pipeId,s1Id,s2Id){
-  const key=getKey('openai'),pipe=document.getElementById(pipeId),s1=document.getElementById(s1Id),s2=document.getElementById(s2Id);
+async function runWhisper(blob,filename,pipeId,s1Id,s2Id,sttEng){
+  sttEng=sttEng||'openai';
+  const isGroq=sttEng.startsWith('groq');
+  const key=isGroq?getKey('groq'):getKey('openai');
+  const pipe=document.getElementById(pipeId),s1=document.getElementById(s1Id),s2=document.getElementById(s2Id);
+  // STT 엔진별 설정
+  const sttConfig={
+    'openai':{url:'https://api.openai.com/v1/audio/transcriptions',model:'whisper-1',label:'OpenAI Whisper'},
+    'groq-turbo':{url:'https://api.groq.com/openai/v1/audio/transcriptions',model:'whisper-large-v3-turbo',label:'Groq Whisper Turbo'},
+    'groq-v3':{url:'https://api.groq.com/openai/v1/audio/transcriptions',model:'whisper-large-v3',label:'Groq Whisper V3'},
+  };
+  const cfg=sttConfig[sttEng]||sttConfig['openai'];
   pipe.classList.add('show');s1.className='stt-step active';s2.className='stt-step';
+  s1.querySelector('.stt-dot').nextSibling.textContent=cfg.label+' 처리 중...';
   try{
     const ext=filename.split('.').pop().toLowerCase();
     const ok=['mp3','mp4','mpeg','mpga','m4a','wav','webm','ogg','flac'];
     let sendBlob=blob,sendName=filename;
     if(!ok.includes(ext)){try{sendBlob=await convertToWav(blob);sendName='recording.wav';}catch(e){sendName=filename.replace(/\.[^.]+$/,'.mp4');}}
-    const fd=new FormData();fd.append('file',sendBlob,sendName);fd.append('model','whisper-1');fd.append('language','ko');fd.append('response_format','text');
-    const r=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd});
-    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error('Whisper: '+(e.error?.message||r.statusText));}
+    const fd=new FormData();fd.append('file',sendBlob,sendName);fd.append('model',cfg.model);fd.append('language','ko');fd.append('response_format','text');
+    const r=await fetch(cfg.url,{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd});
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(cfg.label+': '+(e.error?.message||r.statusText));}
     const transcript=await r.text();s1.className='stt-step done';s2.className='stt-step done';
     document.getElementById('inputTxt').value=transcript;switchInput('text');
     navigator.clipboard.writeText(transcript).catch(()=>{});
-    showToast('✅ 음성인식 완료!');
+    showToast('✅ '+cfg.label+' 음성인식 완료!');
   }catch(err){showToast('❌ '+err.message);s1.className='stt-step';s2.className='stt-step';}
   finally{document.getElementById('recBtn')?.classList.remove('processing');document.getElementById('recLabel').textContent='탭하여 녹음 시작';}
 }
