@@ -144,6 +144,11 @@ textarea::placeholder{color:var(--dim)}
 .img-loading{display:flex;align-items:center;justify-content:center;min-height:160px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);flex:1;min-width:280px;max-width:400px}
 .img-err{padding:10px;background:rgba(239,68,68,.08);border-radius:5px;color:#f87171;font-size:10px;flex:1;min-width:280px;max-width:400px}
 .img-model-grid{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}
+.img-modal{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:1000;display:flex;align-items:center;justify-content:center;flex-direction:column;cursor:pointer;animation:fadeIn .2s}
+.img-modal img{max-width:95vw;max-height:80vh;object-fit:contain;border-radius:8px;box-shadow:0 0 40px rgba(0,180,216,.3)}
+.img-modal-bar{display:flex;gap:8px;margin-top:12px}
+.img-modal-btn{padding:8px 18px;border:1px solid rgba(255,255,255,.3);border-radius:6px;background:rgba(255,255,255,.1);color:#fff;font-size:12px;font-weight:600;cursor:pointer;backdrop-filter:blur(4px)}
+.img-modal-btn:hover{background:rgba(255,255,255,.25);border-color:var(--accent)}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -849,7 +854,7 @@ async function genImages(){
         case 'nai': url=await genNAI(prompt); break;
       }
       const el=document.getElementById('img_'+eng);el.className='img-result';
-      el.innerHTML=`<img src="${url}" onclick="window.open(this.src,'_blank')"><div class="img-label"><span>${labels[eng]}</span><button class="btn-sm" style="font-size:8px" onclick="downloadImg(this.closest('.img-result').querySelector('img').src,'soap_${eng}.png')">💾</button></div>`;
+      el.innerHTML=`<img src="${url}" onclick="showImgModal(this.src,'${eng}')"><div class="img-label"><span>${labels[eng]}</span><button class="btn-sm" style="font-size:8px" onclick="downloadImg(this.closest('.img-result').querySelector('img').src,'soap_${eng}.png')">💾</button></div>`;
     }catch(err){const el=document.getElementById('img_'+eng);el.className='img-err';el.innerHTML=`❌ ${labels[eng]}: ${err.message}`;}
   }));
   showToast('🖼️ 이미지 생성 완료!');
@@ -948,9 +953,46 @@ async function genNAI(prompt){
   throw new Error('NAI: 이미지 없음');
 }
 
-function downloadImg(src,fn){
-  const a=document.createElement('a');a.href=src;a.download=fn;
-  document.body.appendChild(a);a.click();a.remove();
+function showImgModal(src,eng){
+  const m=document.createElement('div');m.className='img-modal';
+  m.innerHTML=`<img src="${src}"><div class="img-modal-bar"><button class="img-modal-btn" onclick="event.stopPropagation();downloadImg('${eng}')">💾 저장</button><button class="img-modal-btn" onclick="event.stopPropagation();copyImgToClip(this.closest('.img-modal').querySelector('img'))">📋 복사</button><button class="img-modal-btn" onclick="this.closest('.img-modal').remove()">✕ 닫기</button></div>`;
+  m.addEventListener('click',e=>{if(e.target===m)m.remove();});
+  document.body.appendChild(m);
+}
+
+function downloadImg(engOrSrc,fn){
+  // engOrSrc가 data:나 http로 시작하면 직접 src, 아니면 엔진명으로 찾기
+  let src=engOrSrc,filename=fn||'soap_image.png';
+  if(!engOrSrc.startsWith('data:')&&!engOrSrc.startsWith('http')&&!engOrSrc.startsWith('blob:')){
+    const el=document.getElementById('img_'+engOrSrc);
+    if(el){src=el.querySelector('img')?.src||'';filename='soap_'+engOrSrc+'.png';}
+  }
+  if(!src)return;
+  // blob 변환 후 다운로드 (data URI도 안전하게 처리)
+  if(src.startsWith('data:')){
+    const [header,b64]=src.split(',');
+    const mime=header.match(/data:(.*?);/)?.[1]||'image/png';
+    const bin=atob(b64);const arr=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+    const blob=new Blob([arr],{type:mime});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download=filename;
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  } else {
+    const a=document.createElement('a');a.href=src;a.download=filename;
+    document.body.appendChild(a);a.click();a.remove();
+  }
+  showToast('💾 이미지 저장됨!');
+}
+
+async function copyImgToClip(imgEl){
+  try{
+    const r=await fetch(imgEl.src);
+    const blob=await r.blob();
+    await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
+    showToast('📋 이미지 클립보드에 복사!');
+  }catch(e){showToast('⚠️ 복사 실패 — 저장 버튼 사용');}
 }
 
 // ===== INPUT TABS =====
