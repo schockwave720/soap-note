@@ -12,7 +12,6 @@
   --s:#60a5fa;--o:#34d399;--a:#f59e0b;--p:#f472b6;
   --cerebras:#00d4aa;--gemini:#4285f4;--groq:#f55036;
   --deepseek:#0066ff;--xai:#1da1f2;--openai:#10a37f;--anthropic:#d97706;
-  --openrouter:#ff6b6b;--zai:#8b5cf6;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
@@ -54,8 +53,6 @@ details.card>summary::-webkit-details-marker{display:none}
 .prov-xai .prov-hdr{background:linear-gradient(135deg,#1da1f2,#0d8ecf)}
 .prov-openai .prov-hdr{background:linear-gradient(135deg,#10a37f,#1a7f64)}
 .prov-anthropic .prov-hdr{background:linear-gradient(135deg,#d97706,#b45309)}
-.prov-openrouter .prov-hdr{background:linear-gradient(135deg,#ff6b6b,#ee5a5a)}
-.prov-zai .prov-hdr{background:linear-gradient(135deg,#8b5cf6,#6d28d9)}
 .model-cb{display:inline-flex;align-items:center;gap:2px;padding:2px 5px;background:var(--surface2);border-radius:3px;cursor:pointer;font-size:10px;border:1.5px solid transparent;white-space:nowrap}
 .model-cb:hover{background:#475569}
 .model-cb.sel{border-color:var(--green);background:rgba(6,214,160,.15)}
@@ -169,7 +166,7 @@ textarea::placeholder{color:var(--dim)}
 <!-- API 키 -->
 <details class="card" open>
   <summary class="card-hdr">
-    <span class="card-title">🔑 1단계: API 키 입력</span>
+    <span class="card-title">🔑 API 키 입력</span>
     <span style="font-size:9px;color:var(--dim)">처음 1회만 입력 · 자동 저장됨</span>
   </summary>
   <div class="card-body">
@@ -187,7 +184,7 @@ textarea::placeholder{color:var(--dim)}
 <!-- 의사/병원 프로필 -->
 <details class="card" id="profileCard" open>
   <summary class="card-hdr">
-    <span class="card-title">🩺 2단계: 병원 · 의사 · 약제 정보</span>
+    <span class="card-title">🩺 병원 · 의사 · 약제 정보</span>
     <span style="font-size:9px;color:var(--dim)" id="profileSummary">구리센트럴병원 · NS (기본)</span>
   </summary>
   <div class="card-body">
@@ -302,7 +299,7 @@ textarea::placeholder{color:var(--dim)}
 
 <!-- AI 모델 선택 -->
 <div class="card">
-  <div class="card-hdr"><span class="card-title">🤖 3단계: SOAP 작성할 AI 선택</span><span class="btn-sm" onclick="loadExample()">예시</span></div>
+  <div class="card-hdr"><span class="card-title">🤖 SOAP 작성 AI 선택</span><span class="btn-sm" onclick="loadExample()">예시</span></div>
   <div class="card-body">
     <div style="font-size:10px;color:var(--dim);margin-bottom:6px;line-height:1.6">사용할 AI를 체크하세요. 여러 개 선택하면 동시에 SOAP을 작성해서 비교할 수 있어요.<br>★Best = 최고성능 · 🔥Hot = 인기 · ⚡Fast = 빠른응답</div>
     <div class="sel-bar"><span style="color:var(--dim)">선택된 모델</span><span class="sel-cnt" id="selCnt">0</span></div>
@@ -313,6 +310,24 @@ textarea::placeholder{color:var(--dim)}
       <button class="qbtn" onclick="selFast()">⚡Fast</button>
     </div>
     <div id="modelList"></div>
+    <!-- Custom AI 모델 -->
+    <div style="margin-top:8px;padding:6px 8px;background:var(--surface2);border-radius:5px;border:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:600;color:var(--accent);margin-bottom:4px">🔧 Custom AI 모델 직접 추가</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
+        <select class="api-inp" id="customProvider" style="width:90px;font-size:9px;padding:4px">
+          <option value="openai">OpenAI</option>
+          <option value="anthropic">Claude</option>
+          <option value="gemini">Gemini</option>
+          <option value="groq">Groq</option>
+          <option value="xai">xAI</option>
+          <option value="deepseek">DeepSeek</option>
+          <option value="cerebras">Cerebras</option>
+        </select>
+        <input type="text" class="api-inp" id="customModelId" placeholder="모델 ID (예: gpt-4o)" style="flex:1;font-size:9px;min-width:100px">
+        <button class="btn-sm" onclick="addCustomModel()" style="font-size:9px;white-space:nowrap">➕ 추가</button>
+      </div>
+      <div id="customModels" style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px"></div>
+    </div>
   </div>
 </div>
 
@@ -343,18 +358,17 @@ textarea::placeholder{color:var(--dim)}
 
 <!-- 진료 입력 -->
 <div class="card card-input">
-  <div class="card-hdr"><span class="card-title">✏️ 4단계: 진료 내용 입력</span></div>
+  <div class="card-hdr"><span class="card-title">✏️ 진료 내용 입력</span><span style="font-size:9px;color:rgba(255,255,255,.7)">가장 중요한 단계!</span></div>
   <div class="card-body">
-    <div style="font-size:10px;color:var(--dim);margin-bottom:6px;line-height:1.6">아래 4가지 방법 중 편한 것을 선택하세요.<br>
-    📋 <b>텍스트/클로바</b> = 직접 타이핑하거나 클로바노트 붙여넣기 &nbsp;
-    🎙 <b>녹음</b> = 마이크로 직접 녹음 &nbsp;
-    🎵 <b>음성파일</b> = 녹음파일 업로드 &nbsp;
-    📄 <b>문서</b> = txt 파일 불러오기</div>
+    <div style="background:rgba(0,180,216,.08);border:1px solid rgba(0,180,216,.2);border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:11px;line-height:1.7;color:var(--text)">
+      💡 <b>환자와 대화한 내용</b>을 아래에 입력하면 AI가 SOAP 노트로 변환합니다.<br>
+      <span style="color:var(--green)">✓ 타이핑, 붙여넣기, 마이크 녹음, 파일 업로드 — 편한 방법을 선택하세요.</span>
+    </div>
     <div class="input-tabs">
-      <button class="input-tab active" onclick="switchInput('text')">📋 텍스트/클로바</button>
-      <button class="input-tab" onclick="switchInput('rec')">🎙 녹음</button>
+      <button class="input-tab active" onclick="switchInput('text')">📋 타이핑/붙여넣기</button>
+      <button class="input-tab" onclick="switchInput('rec')">🎙 마이크 녹음</button>
       <button class="input-tab" onclick="switchInput('file')">🎵 음성파일</button>
-      <button class="input-tab" onclick="switchInput('doc')">📄 문서</button>
+      <button class="input-tab" onclick="switchInput('doc')">📄 문서파일</button>
     </div>
     <div class="input-pane active" id="pane-text">
       <div style="display:flex;gap:3px;margin-bottom:4px;flex-wrap:wrap">
@@ -366,13 +380,14 @@ textarea::placeholder{color:var(--dim)}
         <label class="detail-opt sel"><input type="radio" name="langMode" value="en" checked> 🔤영어위주</label>
         <label class="detail-opt"><input type="radio" name="langMode" value="bilingual"> 🔄한영병기</label>
       </div>
-      <textarea id="inputTxt" placeholder="여기에 자유롭게 입력하세요:
+      <textarea id="inputTxt" placeholder="진료 내용을 여기에 입력하세요 ✍️
 
-• 클로바노트 녹취록 붙여넣기 (Ctrl+V)
-• 직접 메모/구술 입력
-• 진료 내용 요약
+예시: 50대 남자 허리아프고 오른쪽 다리 저림 3주째. VAS 7점. 
+SLR 양성. MRI 안 찍었고 고혈압약 복용 중. 
+MRI 찍고 가바펜틴 시작하려고 함.
 
-Ctrl+Enter → 변환 시작"></textarea>
+💡 클로바노트 녹취록도 그대로 붙여넣기 가능!
+🚀 Ctrl+Enter = 바로 SOAP 변환"></textarea>
     </div>
     <div class="input-pane" id="pane-rec">
       <div style="font-size:9px;color:var(--dim);text-align:center;margin-bottom:2px">HTTPS 환경 필요 (GitHub Pages) · <span id="recMimeInfo"></span></div>
@@ -425,7 +440,7 @@ Ctrl+Enter → 변환 시작"></textarea>
   </div>
 </div>
 
-<button class="btn btn-go" id="goBtn" onclick="runAll()">🧼 5단계: 비누 제조 시작! (SOAP 변환)</button>
+<button class="btn btn-go" id="goBtn" onclick="runAll()">🧼 SOAP 변환 시작!</button>
 <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
 </div>
 
@@ -494,17 +509,6 @@ const PROVIDERS = {
   anthropic:{name:'🧠 Claude',color:'anthropic',apiType:'anthropic',baseUrl:'https://api.anthropic.com/v1',keyId:'anthropic',models:[
     {id:'ant-o46',name:'Opus 4.6',m:'claude-opus-4-6',tag:'best'},
     {id:'ant-s45',name:'Sonnet 4.5',m:'claude-sonnet-4-5-20250929',tag:'hot'},
-    {id:'ant-h35',name:'Haiku 3.5',m:'claude-3-5-haiku-20241022',tag:'fast'},
-  ]},
-  openrouter:{name:'🌐 OpenRouter',color:'openrouter',apiType:'openai',baseUrl:'https://openrouter.ai/api/v1',keyId:'openrouter',models:[
-    {id:'or-arcee-t',name:'Arcee Trinity Thinking',m:'arcee-ai/trinity-large-thinking',tag:'best'},
-    {id:'or-arcee-v',name:'Arcee Virtuoso 72B',m:'arcee-ai/virtuoso-large',tag:'hot'},
-    {id:'or-perplx',name:'Perplexity Sonar Pro',m:'perplexity/sonar-pro',tag:'hot'},
-  ]},
-  zai:{name:'🧠 Z.ai',color:'zai',apiType:'openai',baseUrl:'https://api.z.ai/api/paas/v4',keyId:'zai',models:[
-    {id:'zai-5',name:'GLM-5',m:'glm-5',tag:'best'},
-    {id:'zai-47',name:'GLM-4.7',m:'glm-4.7',tag:'hot'},
-    {id:'zai-47f',name:'GLM-4.7 Flash',m:'glm-4.7-flash',tag:'fast'},
   ]},
 };
 
@@ -516,8 +520,6 @@ const API_KEYS_CONFIG = [
   {id:'xai',label:'🤖 xAI (Grok)',placeholder:'xai-...'},
   {id:'deepseek',label:'💰 DeepSeek',placeholder:'sk-...'},
   {id:'cerebras',label:'⚡ Cerebras',placeholder:'csk-...'},
-  {id:'openrouter',label:'🌐 OpenRouter',placeholder:'sk-or-...'},
-  {id:'zai',label:'🧠 Z.ai',placeholder:'...'},
   {id:'novelai',label:'🎨 NovelAI',placeholder:'pst-...'},
 ];
 
@@ -532,7 +534,7 @@ const SOAP_PROMPTS = {
 
 // ===== INIT =====
 function init() {
-  renderApiKeys(); renderModels(); loadProfile();
+  renderApiKeys(); renderModels(); renderCustomModels(); loadProfile();
   document.querySelectorAll('.detail-opt').forEach(opt => {
     opt.addEventListener('click', e => {
       const inp = opt.querySelector('input');
@@ -580,6 +582,32 @@ function selNone(){document.querySelectorAll('.model-cb input').forEach(c=>c.che
 function selBest(){selNone();document.querySelectorAll('.model-cb').forEach(l=>{if(l.querySelector('.tag-best'))l.querySelector('input').checked=true});updCount();}
 function selFast(){selNone();document.querySelectorAll('.model-cb').forEach(l=>{if(l.querySelector('.tag-fast'))l.querySelector('input').checked=true});updCount();}
 
+// ===== CUSTOM MODEL =====
+let customModelList = JSON.parse(localStorage.getItem('soap_custom_models')||'[]');
+
+function renderCustomModels(){
+  const div=document.getElementById('customModels');
+  div.innerHTML=customModelList.map((cm,i)=>`<label class="model-cb sel" data-pid="${cm.provider}" data-mid="custom_${i}" style="border-color:var(--accent)"><input type="checkbox" value="custom_${i}" checked onchange="updCount()">🔧 ${cm.modelId} <span style="font-size:8px;color:var(--dim)">(${cm.provider})</span><span style="cursor:pointer;margin-left:2px;color:#f87171;font-size:10px" onclick="event.stopPropagation();removeCustomModel(${i})">✕</span></label>`).join('');
+  updCount();
+}
+
+function addCustomModel(){
+  const provider=document.getElementById('customProvider').value;
+  const modelId=document.getElementById('customModelId').value.trim();
+  if(!modelId){showToast('⚠️ 모델 ID를 입력하세요');return;}
+  if(customModelList.find(c=>c.modelId===modelId&&c.provider===provider)){showToast('⚠️ 이미 추가된 모델');return;}
+  customModelList.push({provider,modelId});
+  localStorage.setItem('soap_custom_models',JSON.stringify(customModelList));
+  document.getElementById('customModelId').value='';
+  renderCustomModels();
+  showToast('✅ '+modelId+' 추가됨');
+}
+
+function removeCustomModel(i){
+  customModelList.splice(i,1);
+  localStorage.setItem('soap_custom_models',JSON.stringify(customModelList));
+  renderCustomModels();
+}
 function loadExample(){
   const ex=[`50대 남성. 허리 통증 + 우측 다리 저림 3주.\nSLR 우측 양성 30도. VAS 7.\nMRI 미시행. 고혈압약 복용 중.\n계획: L-spine MRI, 가바펜틴, 물리치료.`,
   `65세 여성. 양측 하지 방사통 + 간헐적 파행 6개월.\nL4-5 spinal stenosis on MRI. VAS 6.\n신경차단술 고려. 수술 상담 예정.`];
@@ -790,8 +818,17 @@ async function runAll(){
   const selected=[];
   document.querySelectorAll('.model-cb input:checked').forEach(cb=>{
     const l=cb.closest('.model-cb'),pid=l.dataset.pid,mid=l.dataset.mid;
-    const prov=PROVIDERS[pid],model=prov.models.find(m=>m.id===mid);
-    if(model)selected.push({pid,prov,model});
+    if(mid&&mid.startsWith('custom_')){
+      const idx=parseInt(mid.split('_')[1]);
+      const cm=customModelList[idx];
+      if(cm){
+        const prov=PROVIDERS[cm.provider];
+        if(prov){selected.push({pid:cm.provider,prov,model:{id:mid,name:cm.modelId,m:cm.modelId}});}
+      }
+    } else {
+      const prov=PROVIDERS[pid],model=prov?.models.find(m=>m.id===mid);
+      if(model)selected.push({pid,prov,model});
+    }
   });
   if(!selected.length){showToast('⚠️ AI 모델을 선택하세요');return;}
   const btn=document.getElementById('goBtn');btn.disabled=true;btn.textContent=`⏳ ${selected.length}개 AI 비누 제조 중...`;
@@ -812,7 +849,7 @@ async function runAll(){
     }catch(err){document.getElementById('body_'+model.id).innerHTML=`<div class="err-box">❌ ${err.message}</div>`;}
     finally{done++;fill.style.width=(done/total*100)+'%';}
   }));
-  btn.disabled=false;btn.textContent='🧼 비누 제조 시작 (SOAP 변환)';
+  btn.disabled=false;btn.textContent='🧼 SOAP 변환 시작!';
   showToast(`✅ ${done}개 완료!`);
   // 이미지 자동 생성
   buildImagePrompt();
