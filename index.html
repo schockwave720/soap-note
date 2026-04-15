@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AIARTstudio + 日本語 v0415-03 | aiartwithjp</title>
+    <title>AIARTstudio + 日本語 v0415-4 | aiartwithjp</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap">
     <style>
@@ -224,7 +224,7 @@
     <div style="text-align:center;padding:6px 0 4px">
         <span style="display:inline-block;padding:4px 16px;background:linear-gradient(135deg,#1a0533,#2d1b69,#4a1a8a);border-radius:20px;border:1px solid rgba(139,92,246,0.4);box-shadow:0 2px 12px rgba(139,92,246,0.2)">
             <span style="font-size:0.8rem;font-weight:800;background:linear-gradient(135deg,#c084fc,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent">🌙 aiartwithjp</span>
-            <span style="font-size:0.45rem;color:#fbbf24;margin-left:6px;font-weight:700;background:rgba(251,191,36,0.15);padding:2px 6px;border-radius:8px" id="verBadge">v0415-03</span>
+            <span style="font-size:0.45rem;color:#fbbf24;margin-left:6px;font-weight:700;background:rgba(251,191,36,0.15);padding:2px 6px;border-radius:8px" id="verBadge">v0415-4</span>
         </span>
     </div>
     <div class="mode-tabs" style="margin-top:0">
@@ -1334,7 +1334,7 @@
             <div class="card">
                 <h2>📊 진행</h2>
                 <div class="pcon"><div class="ptxt" id="ptxt">대기중...</div><div class="pbar"><div class="pfill" id="pfill"></div></div></div>
-                <div class="logc" id="logc"><div class="log info">🎨 AIARTstudio v0415-03 - 클릭: 확대 | 더블클릭: 재생성 | 모달에서 🔄변형 가능!</div></div>
+                <div class="logc" id="logc"><div class="log info">🎨 AIARTstudio v0415-4 - 클릭: 확대 | 더블클릭: 재생성 | 모달에서 🔄변형 가능!</div></div>
             </div>
         </div>
         
@@ -4184,7 +4184,7 @@ td{padding:4px;border-bottom:1px solid #1e293b;font-size:11px}.section{color:#ff
 .note{background:#1e1b4b;border:1px solid #ffd70040;border-radius:6px;padding:10px;margin:8px 0;font-size:12px;line-height:1.6}
 .note strong{color:#ffd700}
 </style></head><body>
-<h1>💰 AIARTstudio v0415-03 모델 가격표</h1>
+<h1>💰 AIARTstudio v0415-4 모델 가격표</h1>
 <p style="text-align:center;color:#94a3b8;font-size:11px;margin-bottom:10px">환율: $1 = ₩1,450 | 2026.04 기준 | 싱가포르(International) 엔드포인트</p>
 <h2 style="color:#8b5cf6;font-size:14px;margin:8px 0">🧠 텍스트 AI 모델</h2>
 <table><tr><th>모델</th><th>제공</th><th>Input $/1M</th><th>Output $/1M</th><th>비고</th></tr>
@@ -4253,7 +4253,7 @@ td{padding:4px;border-bottom:1px solid #1e293b;font-size:11px}.section{color:#ff
 🐉 이미지: <strong style="color:#a78bfa">Qwen Image Plus</strong> (장당 ₩29) + <strong style="color:#a78bfa">Qwen Image Max</strong> (장당 ₩109, 최고 퀄)<br>
 → 총 <strong style="color:#ffd700">월 ₩36,250</strong>으로 최강속도 + 프로급 AI 아트 워크플로우! 👊
 </div>
-<p style="text-align:center;color:#475569;font-size:10px;margin-top:12px">AIARTstudio v0415-03 | 가격은 수시 변동 가능</p>
+<p style="text-align:center;color:#475569;font-size:10px;margin-top:12px">AIARTstudio v0415-4 | 가격은 수시 변동 가능</p>
 </body></html>`);
     w.document.close();
 }
@@ -6843,7 +6843,7 @@ async function genNovelAI(prompt) {
     const zip = await JSZip.loadAsync(await response.arrayBuffer());
     const fileNames = Object.keys(zip.files);
     if (fileNames.length > 0) {
-        // ★ v0415-03: blob: → data: URL (blob은 갤러리 모달에서 만료됨)
+        // ★ v0415-4: blob: → data: URL (blob은 갤러리 모달에서 만료됨)
         const imgBlob = await zip.files[fileNames[0]].async('blob');
         const url = await new Promise((res, rej) => {
             const reader = new FileReader();
@@ -7037,7 +7037,7 @@ async function genZAI(prompt, model) {
     if (!key) throw new Error('Z.ai API 키 필요');
     const size = model === 'glm-image' ? '1280x1280' : '1024x1024';
     const apiUrl = 'https://api.z.ai/api/paas/v4/images/generations';
-    // ★ v0415-03: response_format=b64_json → base64 직접 수신 (mfile.z.ai CORS 완전 우회!)
+    // ★ v0415-4: response_format=b64_json → base64 직접 수신 (mfile.z.ai CORS 완전 우회!)
     const payload = JSON.stringify({ model: model, prompt: prompt, size: size, response_format: 'b64_json' });
     const hdrs = { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' };
     
@@ -10684,15 +10684,26 @@ async function galGenerate() {
     const promises = iais.map(async (ai) => {
         try {
             const result = await callImg(ai, artPrompt);
-            if (result?.url) {
-                successCount++;
-                const el = document.getElementById(`gal-${ai.id}`);
-                if (el) el.innerHTML = `
-                    <img src="${result.url}" style="width:100%;border-radius:6px;cursor:pointer" onclick="window.open(this.src,'_blank')" title="클릭→원본 보기">
-                    <div style="display:flex;gap:4px;margin-top:4px;align-items:center">
-                        <span style="font-size:0.4rem;color:#d4a574">${ai.name}</span>
-                        <a href="${result.url}" download="gallery_${ai.id}_${Date.now()}.png" style="font-size:0.38rem;color:#22c55e;text-decoration:none">💾 저장</a>
-                    </div>`;
+            // ★ v0415-4: 이미지 모드와 동일한 방식 — generatedImages + openModal
+            const imgUrl = (typeof result === 'object' && result.url) ? result.url : result;
+            if (!imgUrl) throw new Error('이미지 URL 없음');
+            
+            successCount++;
+            const genIdx = generatedImages.length;
+            generatedImages.push({
+                url: imgUrl, prompt: artPrompt, imgAi: ai.name,
+                promptAi: tai.name, artist: result?.artist || '',
+                size: result?.size || '16:9', _naiLabSeed: result?.seed
+            });
+            updateGallery();
+            
+            const el = document.getElementById(`gal-${ai.id}`);
+            if (el) el.innerHTML = `
+                <img src="${imgUrl}" style="width:100%;border-radius:6px;cursor:pointer" onclick="openModal(${genIdx})" title="클릭→확대 보기">
+                <div style="display:flex;gap:4px;margin-top:4px;align-items:center">
+                    <span style="font-size:0.4rem;color:#d4a574">${escHtml(ai.name)}</span>
+                    <button onclick="event.stopPropagation();dlImg(${genIdx})" style="font-size:0.38rem;color:#22c55e;background:none;border:1px solid #22c55e;border-radius:4px;padding:1px 4px;cursor:pointer">💾 저장</button>
+                </div>`;
             }
         } catch(e) {
             const el = document.getElementById(`gal-${ai.id}`);
@@ -10778,7 +10789,7 @@ init();
 </script>
 <footer style="text-align:center;padding:8px;font-size:0.38rem;color:rgba(255,255,255,0.25);border-top:1px solid rgba(255,255,255,0.05);margin-top:10px">
     <p id="exchangeRateInfo" style="font-size:0.4rem;color:#fbbf24;margin-bottom:4px">💱 환율 로딩 중...</p>
-    <p>AIARTstudio v0415-03 (20260409) Personal Edition • Client-side multi-AI creative tool.</p>
+    <p>AIARTstudio v0415-4 (20260409) Personal Edition • Client-side multi-AI creative tool.</p>
     <p>Users are responsible for complying with each AI service's terms of service. No API keys are transmitted to or stored by AIARTstudio.</p>
     <p>Generated content ownership is subject to each AI provider's terms. © 2025 AIARTstudio</p>
 </footer>
