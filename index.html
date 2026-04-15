@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AIARTstudio + 日本語 v0415-01 | aiartwithjp</title>
+    <title>AIARTstudio + 日本語 v0415-03 | aiartwithjp</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap">
     <style>
@@ -224,7 +224,7 @@
     <div style="text-align:center;padding:6px 0 4px">
         <span style="display:inline-block;padding:4px 16px;background:linear-gradient(135deg,#1a0533,#2d1b69,#4a1a8a);border-radius:20px;border:1px solid rgba(139,92,246,0.4);box-shadow:0 2px 12px rgba(139,92,246,0.2)">
             <span style="font-size:0.8rem;font-weight:800;background:linear-gradient(135deg,#c084fc,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent">🌙 aiartwithjp</span>
-            <span style="font-size:0.45rem;color:#fbbf24;margin-left:6px;font-weight:700;background:rgba(251,191,36,0.15);padding:2px 6px;border-radius:8px" id="verBadge">v0415-01</span>
+            <span style="font-size:0.45rem;color:#fbbf24;margin-left:6px;font-weight:700;background:rgba(251,191,36,0.15);padding:2px 6px;border-radius:8px" id="verBadge">v0415-03</span>
         </span>
     </div>
     <div class="mode-tabs" style="margin-top:0">
@@ -1334,7 +1334,7 @@
             <div class="card">
                 <h2>📊 진행</h2>
                 <div class="pcon"><div class="ptxt" id="ptxt">대기중...</div><div class="pbar"><div class="pfill" id="pfill"></div></div></div>
-                <div class="logc" id="logc"><div class="log info">🎨 AIARTstudio v0415-01 - 클릭: 확대 | 더블클릭: 재생성 | 모달에서 🔄변형 가능!</div></div>
+                <div class="logc" id="logc"><div class="log info">🎨 AIARTstudio v0415-03 - 클릭: 확대 | 더블클릭: 재생성 | 모달에서 🔄변형 가능!</div></div>
             </div>
         </div>
         
@@ -4184,7 +4184,7 @@ td{padding:4px;border-bottom:1px solid #1e293b;font-size:11px}.section{color:#ff
 .note{background:#1e1b4b;border:1px solid #ffd70040;border-radius:6px;padding:10px;margin:8px 0;font-size:12px;line-height:1.6}
 .note strong{color:#ffd700}
 </style></head><body>
-<h1>💰 AIARTstudio v0415-01 모델 가격표</h1>
+<h1>💰 AIARTstudio v0415-03 모델 가격표</h1>
 <p style="text-align:center;color:#94a3b8;font-size:11px;margin-bottom:10px">환율: $1 = ₩1,450 | 2026.04 기준 | 싱가포르(International) 엔드포인트</p>
 <h2 style="color:#8b5cf6;font-size:14px;margin:8px 0">🧠 텍스트 AI 모델</h2>
 <table><tr><th>모델</th><th>제공</th><th>Input $/1M</th><th>Output $/1M</th><th>비고</th></tr>
@@ -4253,7 +4253,7 @@ td{padding:4px;border-bottom:1px solid #1e293b;font-size:11px}.section{color:#ff
 🐉 이미지: <strong style="color:#a78bfa">Qwen Image Plus</strong> (장당 ₩29) + <strong style="color:#a78bfa">Qwen Image Max</strong> (장당 ₩109, 최고 퀄)<br>
 → 총 <strong style="color:#ffd700">월 ₩36,250</strong>으로 최강속도 + 프로급 AI 아트 워크플로우! 👊
 </div>
-<p style="text-align:center;color:#475569;font-size:10px;margin-top:12px">AIARTstudio v0415-01 | 가격은 수시 변동 가능</p>
+<p style="text-align:center;color:#475569;font-size:10px;margin-top:12px">AIARTstudio v0415-03 | 가격은 수시 변동 가능</p>
 </body></html>`);
     w.document.close();
 }
@@ -6843,8 +6843,15 @@ async function genNovelAI(prompt) {
     const zip = await JSZip.loadAsync(await response.arrayBuffer());
     const fileNames = Object.keys(zip.files);
     if (fileNames.length > 0) {
-        const url = URL.createObjectURL(await zip.files[fileNames[0]].async('blob'));
-        return { url, artist: artistName, size: `${s.width}x${s.height}` };
+        // ★ v0415-03: blob: → data: URL (blob은 갤러리 모달에서 만료됨)
+        const imgBlob = await zip.files[fileNames[0]].async('blob');
+        const url = await new Promise((res, rej) => {
+            const reader = new FileReader();
+            reader.onloadend = () => res(reader.result);
+            reader.onerror = rej;
+            reader.readAsDataURL(imgBlob);
+        });
+        return { url, artist: artistName, size: `${s.width}x${s.height}`, seed: requestBody.parameters.seed };
     }
     throw new Error('NAI: No image');
     }); // withNaiLock 끝
@@ -7030,10 +7037,11 @@ async function genZAI(prompt, model) {
     if (!key) throw new Error('Z.ai API 키 필요');
     const size = model === 'glm-image' ? '1280x1280' : '1024x1024';
     const apiUrl = 'https://api.z.ai/api/paas/v4/images/generations';
-    const payload = JSON.stringify({ model: model, prompt: prompt, size: size });
+    // ★ v0415-03: response_format=b64_json → base64 직접 수신 (mfile.z.ai CORS 완전 우회!)
+    const payload = JSON.stringify({ model: model, prompt: prompt, size: size, response_format: 'b64_json' });
     const hdrs = { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' };
     
-    // CORS 프록시 목록 (직접 호출 먼저, 실패시 프록시 순차 시도)
+    // CORS 프록시 목록 (API 호출용)
     const attempts = [
         apiUrl,
         'https://corsproxy.io/?' + encodeURIComponent(apiUrl),
@@ -7047,7 +7055,6 @@ async function genZAI(prompt, model) {
             if (!r.ok) {
                 const err = await r.json().catch(()=>({}));
                 const msg = err?.error?.message || JSON.stringify(err) || `Z.ai ${r.status}`;
-                // 중국 NSFW 검열 필터 감지 → 한국어 메시지로 변환
                 if (msg.includes('不安全') || msg.includes('敏感') || msg.includes('sensitive') || msg.includes('unsafe')) {
                     throw new Error('🔞 Z.ai NSFW 차단! 중국 AI라 야한/폭력적 프롬프트 금지. SFW 프롬프트로 재시도하거나 NovelAI/Krea 사용 추천');
                 }
@@ -7064,17 +7071,19 @@ async function genZAI(prompt, model) {
         }
     }
     if (!d) throw new Error(`Z.ai CORS 차단: ${lastErr}`);
-    if (!d?.data?.[0]?.url) throw new Error('Z.ai: 이미지 URL 없음');
     
-    // ★ v0415-01: mfile.z.ai CORS 우회 — 프록시 경유 base64 변환
-    const imgUrl = d.data[0].url;
-    
-    // 프록시를 통해 이미지 fetch → base64 변환
-    async function fetchImgAsBase64(url) {
+    // b64_json 응답 처리
+    if (d?.data?.[0]?.b64_json) {
+        return `data:image/png;base64,${d.data[0].b64_json}`;
+    }
+    // fallback: URL 응답 (b64_json 미지원 모델)
+    if (d?.data?.[0]?.url) {
+        const imgUrl = d.data[0].url;
+        // 프록시 경유 fetch 시도
         const proxies = [
-            url, // 직접 시도 (같은 도메인이면 성공)
-            'https://corsproxy.io/?' + encodeURIComponent(url),
-            'https://api.allorigins.win/raw?url=' + encodeURIComponent(url)
+            imgUrl,
+            'https://corsproxy.io/?' + encodeURIComponent(imgUrl),
+            'https://api.allorigins.win/raw?url=' + encodeURIComponent(imgUrl)
         ];
         for (const pUrl of proxies) {
             try {
@@ -7089,30 +7098,10 @@ async function genZAI(prompt, model) {
                 });
             } catch(e) { continue; }
         }
-        return null;
+        // 최후 수단: URL 직접 반환
+        return imgUrl;
     }
-    
-    // 1차: fetch+프록시로 base64 변환 시도
-    const b64 = await fetchImgAsBase64(imgUrl);
-    if (b64) return b64;
-    
-    // 2차: img 태그 (crossOrigin 없이 — 표시만 가능, canvas 불가)
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => {
-            try {
-                const c = document.createElement('canvas');
-                c.width = img.naturalWidth; c.height = img.naturalHeight;
-                c.getContext('2d').drawImage(img, 0, 0);
-                resolve(c.toDataURL('image/png'));
-            } catch(e) {
-                // tainted canvas → URL 직접 반환 (표시는 됨)
-                resolve(imgUrl);
-            }
-        };
-        img.onerror = () => resolve(imgUrl);
-        img.src = imgUrl;
-    });
+    throw new Error('Z.ai: 이미지 데이터 없음');
 }
 // ★ Venice AI - 이미지 생성 (검열 없음!)
 async function genVenice(prompt, model) {
@@ -10789,7 +10778,7 @@ init();
 </script>
 <footer style="text-align:center;padding:8px;font-size:0.38rem;color:rgba(255,255,255,0.25);border-top:1px solid rgba(255,255,255,0.05);margin-top:10px">
     <p id="exchangeRateInfo" style="font-size:0.4rem;color:#fbbf24;margin-bottom:4px">💱 환율 로딩 중...</p>
-    <p>AIARTstudio v0415-01 (20260409) Personal Edition • Client-side multi-AI creative tool.</p>
+    <p>AIARTstudio v0415-03 (20260409) Personal Edition • Client-side multi-AI creative tool.</p>
     <p>Users are responsible for complying with each AI service's terms of service. No API keys are transmitted to or stored by AIARTstudio.</p>
     <p>Generated content ownership is subject to each AI provider's terms. © 2025 AIARTstudio</p>
 </footer>
